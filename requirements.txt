@@ -1,0 +1,12 @@
+coloredlogs==15.0.1
+gettext-windows==1.0
+greenlet==1.1.3.post0
+humanfriendly==10.0
+pyaes==1.6.1
+pyasn1==0.4.8
+pyreadline3==3.4.1
+python-gettext==4.1
+python-json-logger==2.0.4
+rsa==4.9
+SQLAlchemy==1.4.42
+Telethon==1.25.4

@@ -1,0 +1,13 @@
+#venv
+python -m venv venv
+source venv/bin/activate  #?????
+deactivate
+pip freeze > requirements.txt
+pip install -r requirements.txt
+
+#gettext
+xgettext -o example.pot -f txt_with_name_of_localization_file.txt    # взять файлы из текста
+cd /locale/ru_RU/LC_MESSAGES/
+copy example.pot to LC_MESSAGES and rename to example.po
+msgfmt -o example.mo example.po
+
