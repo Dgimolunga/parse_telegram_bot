@@ -43,6 +43,5 @@ def change_lang(language: 'str'):
 
 if not __started:
     __start__()
-    __translator_dict__['ru_RU']
     print()
     __started = True
