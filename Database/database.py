@@ -230,12 +230,12 @@ def filter_method_available_in_db(table, **kwargs):
     return query
 
 
-def db_get_tickers(user_logging):
-    query = session_db.query(Ticker).filter_by(key_user=user_logging)
-    tickers = []
-    for ticker_obj in query:
-        tickers.append(ticker_obj)
-    return tickers
+# def db_get_tickers(user_logging):
+#     query = session_db.query(Ticker).filter_by(key_user=user_logging)
+#     tickers = []
+#     for ticker_obj in query:
+#         tickers.append(ticker_obj)
+#     return tickers
 
 
 #  repeatability check for set_data
@@ -328,54 +328,54 @@ def check_user_logging_name_in_db(name: str):
         return False
 
 
-# for /get commands
-def get_data_for_str_request(telegram_user_id: int, user_logging, arg, check_user=False):
-    if check_user:
-        pass
-    else:
-        if not check_user_in_telegram_id(user_logging, telegram_user_id):
-            raise UserNotFoundExc()
-    return_list = []
-    # check for get tag in ticker
-    args = arg.split('_', maxsplit=1)
-    if len(args) == 1:
-        ticker_name = none_ticker
-        arg = args[0]
-    else:
-        ticker_name = args[0]
-        arg = args[1]
-
-    if arg not in command_get_dict:
-        raise NotCorrectExc(f"{arg} not in command_get_list")
-
-    if arg != 'tags' and arg != 'alltags':
-        list_of_obj = session_db.query(command_get_dict[arg][0]).filter_by(key_user=user_logging)
-        for obj in list_of_obj:
-            return_list.append(getattr(obj, command_get_dict[arg][1]))
-        return return_list
-    elif arg == 'tags':
-        # check ticker in d
-        query = filter_method_available_in_db(Ticker, key_user=user_logging, ticker=ticker_name)
-        if query.first() is None:
-            raise NotCorrectExc(f'Ticker: {ticker_name} not found')
-        key_ticker = query.first().key_ticker
-        query = session_db.query(Tag).filter_by(key_ticker=key_ticker)
-        for tag_obj in query:
-            return_list.append(tag_obj.tag)
-        return return_list
-    elif arg == 'alltags':
-        query_ticker = filter_method_available_in_db(Ticker, key_user=user_logging)
-        for ticker_obj in query_ticker:
-            query_tag = filter_method_available_in_db(Tag, key_ticker=ticker_obj.key_ticker)
-            str_to_return_list = f'{ticker_obj.ticker}: '
-            list_for_str_to_return_list = []
-            for tag_obj in query_tag:
-                list_for_str_to_return_list.append(tag_obj.tag)
-            str_to_return_list += str(list_for_str_to_return_list)
-            return_list.append(str_to_return_list)
-        return return_list
-    else:
-        raise NotCorrectExc
+# # for /get commands
+# def get_data_for_str_request(telegram_user_id: int, user_logging, arg, check_user=False):
+#     if check_user:
+#         pass
+#     else:
+#         if not check_user_in_telegram_id(user_logging, telegram_user_id):
+#             raise UserNotFoundExc()
+#     return_list = []
+#     # check for get tag in ticker
+#     args = arg.split('_', maxsplit=1)
+#     if len(args) == 1:
+#         ticker_name = none_ticker
+#         arg = args[0]
+#     else:
+#         ticker_name = args[0]
+#         arg = args[1]
+#
+#     if arg not in command_get_dict:
+#         raise NotCorrectExc(f"{arg} not in command_get_list")
+#
+#     if arg != 'tags' and arg != 'alltags':
+#         list_of_obj = session_db.query(command_get_dict[arg][0]).filter_by(key_user=user_logging)
+#         for obj in list_of_obj:
+#             return_list.append(getattr(obj, command_get_dict[arg][1]))
+#         return return_list
+#     elif arg == 'tags':
+#         # check ticker in d
+#         query = filter_method_available_in_db(Ticker, key_user=user_logging, ticker=ticker_name)
+#         if query.first() is None:
+#             raise NotCorrectExc(f'Ticker: {ticker_name} not found')
+#         key_ticker = query.first().key_ticker
+#         query = session_db.query(Tag).filter_by(key_ticker=key_ticker)
+#         for tag_obj in query:
+#             return_list.append(tag_obj.tag)
+#         return return_list
+#     elif arg == 'alltags':
+#         query_ticker = filter_method_available_in_db(Ticker, key_user=user_logging)
+#         for ticker_obj in query_ticker:
+#             query_tag = filter_method_available_in_db(Tag, key_ticker=ticker_obj.key_ticker)
+#             str_to_return_list = f'{ticker_obj.ticker}: '
+#             list_for_str_to_return_list = []
+#             for tag_obj in query_tag:
+#                 list_for_str_to_return_list.append(tag_obj.tag)
+#             str_to_return_list += str(list_for_str_to_return_list)
+#             return_list.append(str_to_return_list)
+#         return return_list
+#     else:
+#         raise NotCorrectExc
 
 
 def get_smth_from_database(telegram_user_id: int, user_logging: str, data_table: str, filtr: dict,
@@ -424,36 +424,36 @@ def get_all_users(telegram_id):
     return users_list
 
 
-# for /set or /add commands
-def set_data(telegram_user_id: int, user_logging, arg, data):
-    user = get_user(user_logging, telegram_user_id)
-    # /add_loggingname_ticker_tag
-    # /add_loggingname_tag    ---- Ticker = 'No Ticker'
-    args = arg.split('_', maxsplit=1)
-    if len(args) == 1:
-        ticker_name = none_ticker
-        arg = args[0]
-    else:
-        ticker_name = args[0]
-        arg = args[1]
-
-    if hasattr(User, arg):
-        check_arg_dict[arg](data)
-        setattr(user, arg, data)
-    elif hasattr(ParsChannel, arg):
-        add_parse_channel_to_database(user_logging, data)
-    elif hasattr(ShareChannel, arg):
-        add_share_channel_to_database(user_logging, data)
-    elif hasattr(Ticker, arg):
-        add_ticker_to_database(user_logging, data)
-    elif hasattr(Tag, arg):
-        add_tag_to_database(user_logging, ticker_name, data)
-    else:
-        raise NotCorrectExc
-    # for arg in (kwargs.keys() & __arg_user_db):
-    #     setattr(user, arg, kwargs[arg])  # что будет если во время запуска поменять данные
-
-    session_db.commit()
+# # for /set or /add commands
+# def set_data(telegram_user_id: int, user_logging, arg, data):
+#     user = get_user(user_logging, telegram_user_id)
+#     # /add_loggingname_ticker_tag
+#     # /add_loggingname_tag    ---- Ticker = 'No Ticker'
+#     args = arg.split('_', maxsplit=1)
+#     if len(args) == 1:
+#         ticker_name = none_ticker
+#         arg = args[0]
+#     else:
+#         ticker_name = args[0]
+#         arg = args[1]
+#
+#     if hasattr(User, arg):
+#         check_arg_dict[arg](data)
+#         setattr(user, arg, data)
+#     elif hasattr(ParsChannel, arg):
+#         add_parse_channel_to_database(user_logging, data)
+#     elif hasattr(ShareChannel, arg):
+#         add_share_channel_to_database(user_logging, data)
+#     elif hasattr(Ticker, arg):
+#         add_ticker_to_database(user_logging, data)
+#     elif hasattr(Tag, arg):
+#         add_tag_to_database(user_logging, ticker_name, data)
+#     else:
+#         raise NotCorrectExc
+#     # for arg in (kwargs.keys() & __arg_user_db):
+#     #     setattr(user, arg, kwargs[arg])  # что будет если во время запуска поменять данные
+#
+#     session_db.commit()
 
 
 # ____________________________________________________________
@@ -525,6 +525,16 @@ dict_for_add = {
 
 dict_for_get_name = {
 
+    'user': {
+        'base': User,
+        'list_filter_for_del': ['key_user'],
+        'get_res': 'key_user'
+    },
+    'tickers': {
+        'base': User,
+        'list_filter_for_del': ['key_user'],
+        'get_res': 'key_user'
+    },
     'tags': {
         'base': Ticker,
         'list_filter_for_del': ['key_ticker'],
@@ -535,10 +545,31 @@ dict_for_get_name = {
         'list_filter_for_del': ['key_tag'],
         'get_res': 'tag'
     },
-    'parse_channel': 2,
-    'sharp_channel': 3
+    'pchs': {
+        'base': User,
+        'list_filter_for_del': ['key_user'],
+        'get_res': 'key_user'
+    },
+    'shchs': {
+        'base': User,
+        'list_filter_for_del': ['key_user'],
+        'get_res': 'key_user'
+    },
+    'pch': {
+        'base': ParsChannel,
+        'list_filter_for_del': ['key_user'],
+        'get_res': 'key_user'
+    },
+    'shch': {
+        'base': User,
+        'list_filter_for_del': ['key_user'],
+        'get_res': 'key_user'
+    },
 }
+
+
 dict_for_del = {
+
     'tags': {
         'base': Ticker,
         'list_filter_for_del': ['key_ticker'],
@@ -549,8 +580,8 @@ dict_for_del = {
         'list_filter_for_del': ['key_tag'],
         'get_res': 'tag'
     },
-    'parse_channel': 2,
-    'sharp_channel': 3
+    'pch': 2,
+    'shch': 3
 }
 
 
@@ -662,8 +693,8 @@ def db_del_share_channel(_k_data):
 dict_del = {
     'tag': db_del_tag,
     'tags': db_del_tags,
-    'parse_channel': db_del_parse_channel,
-    'share_channel': db_del_share_channel,
+    'pch': db_del_parse_channel,
+    'shch': db_del_share_channel,
 }
 
 

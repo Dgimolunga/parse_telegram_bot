@@ -8,19 +8,18 @@ from telethon.tl.custom import Button
 import hashlib
 import config_for_bot as cfg
 from data_value import telegram_parse
-from handlers.tools.chatssettings import CI, ExceptionUserNotSelectedSendAllUsers
+from handlers.tools.chatssettings import CI, ExceptionUserNotSelectedSendAllUsers, ExceptionNotFindInDB
 from handlers.tools import states as st
 from abc import ABC
 import asyncio
+import telethon.events
 # ______________________________________________________________________________________________________________________
 # import function of database
-from Database.database import get_all_users, set_data, get_data_for_str_request, check_user_logging_name_in_db, \
-    add_new_user_to_database, db_get_tickers, get_smth_from_database, add_user_to_telegram_id, \
+from Database.database import get_all_users, check_user_logging_name_in_db, \
+    add_new_user_to_database, add_user_to_telegram_id, \
     db_get, db_add_smth_for_user, db_switch_some_for_user, db_del, db_del_1, db_get_all_smth, db_get_1
 # import exception of database
 from Database.database import NotCorrectExc, DataDuplicateExc, UserNotFoundExc
-# import var of database
-from Database.database import command_get_list, command_add_list
 
 # ____________________________________________________________
 # add my logger
@@ -31,32 +30,34 @@ logger = my_logger.get_logger(__name__)
 parse_bot_users_state_fsm = st.ParseBotUsersStateFSM()
 MAX_SIZE_ADD = 55
 
+
 # ____________________________________________________________
 # any dicts
 
 
-command_dict = {
-    'add_user': '/add_user',
-    'my_users': '/myusers'
-}
+# command_dict = {
+#     'add_user': '/add_user',
+#     'my_users': '/myusers'
+# }
 
-dontUSE_dict_for_back_buttons = {
-    'user_': 'myusers',
-    'tickers_': 'user_',
-    'parsechannels_': 'user_',
-    'sharechannels_': 'user_',
-    'settings_': 'user_',
-    'tags_': 'tickers_',
-}
+# dontUSE_dict_for_back_buttons = {
+#     'user_': 'myusers',
+#     'tickers_': 'user_',
+#     'parsechannels_': 'user_',
+#     'sharechannels_': 'user_',
+#     'settings_': 'user_',
+#     'tags_': 'tickers_',
+# }
 
-users_setting = {}
-name_of_key = {
-    'tickers': _('Ticker'),
-    'tags': _('Tag'),
-    'parsechannels': _('Parsechannel'),
-    'sharechannels': _('Sharechannel'),
-
-}
+# users_setting = {}
+# name_of_key = {
+#     'tickers': _('Ticker'),
+#     'tags': _('Ticker'),
+#     'tag': _('Tag'),
+#     'pchs': _('Parsechannel'),
+#     'shchs': _('Sharechannel'),
+#
+# }
 
 
 # _____________________________________________________________________________________________________________________
@@ -92,6 +93,16 @@ def decor_mark_message_for_delete(fun):
 
 # _____________________________________________________________________________________________________________________
 # tools
+def get_key_for_button_key(event):
+    if isinstance(event, events.NewMessage.Event):
+        key = event.text[1:].split(' ').pop(0)
+        if key not in ['usermanager']:
+            raise Exception('not command in used')
+        return key
+    elif isinstance(event, events.CallbackQuery.Event):
+        return event.data.decode().split('_', maxsplit=2)[0]
+
+
 def get_k_kdata_backpath_from_data(data):
     res = data.decode().split('_', maxsplit=2)
     return res[0], res[1], res[2]
@@ -185,7 +196,12 @@ class MButton:
         return Button.inline(self.button_msg, self.button_data)
 
 
-class DeleteButton:
+class ButtonOfTabale:
+    def create_button(self):
+        return self.button.get_button()
+
+
+class DeleteButton(ButtonOfTabale):
     def __init__(self, buttons_table):
         self.button = MButton(_('Delete this'), 'confirmdelete_')
         self.buttons_table = buttons_table
@@ -194,11 +210,10 @@ class DeleteButton:
         btf = self.buttons_table.buttons_table_info
         data = self.buttons_table.event_of_callback_query.data.decode()
         self.button.button_msg += btf.delete_msg
-        self.button.button_data += data
         return self.button.get_button()
 
 
-class AddNewButton:
+class AddNewButton(ButtonOfTabale):
     def __init__(self, buttons_table):
         self.button = MButton(_('Add new'), 'add_')
         self.buttons_table = buttons_table
@@ -217,7 +232,7 @@ class SwitchEnableButton:
         pass
 
 
-class EditButton:
+class EditButton(ButtonOfTabale):
     def __init__(self, buttons_table):
         self.button = MButton(_('Edit this'), 'edit_')
         self.buttons_table = buttons_table
@@ -230,55 +245,113 @@ class EditButton:
         return self.button.get_button()
 
 
-class BackButton:
+class BackButton(ButtonOfTabale):
     def __init__(self, buttons_table):
         self.button = MButton(_('« Back to'))
         self.buttons_table = buttons_table
-    # data = 'user_123'
-    # data = 'tickers_1' what tickers hav key_user = 1
-    # data = 'tags_2' what tags hame key_ticker = 2, back = what first user have key_ticker=2 (1)
-    # data = 'tag_3'
+
     def create_button(self):
-
         btf = self.buttons_table.buttons_table_info
-        data = self.buttons_table.event_of_callback_query.data.decode()
         self.button.button_msg += btf.back_msg
-        self.button.button_data = data[data.find('_', data.find('_') + 1) + 1:]  # get second path
-
-
+        self.button.button_data = CI[self.buttons_table.event_of_callback_query].get_back_path()  # get second path
         return self.button.get_button()
 
 
-class GetAllButtons:
+class TickersButton(ButtonOfTabale):
+    def __init__(self, buttons_table):
+        self.button = MButton(_('Tickers'), 'tickers_')
+        self.buttons_table = buttons_table
+
+    def create_button(self):
+        btf = self.buttons_table.buttons_table_info
+        event = self.buttons_table.event_of_callback_query
+        self.button.button_data += CI[event].selected_user
+        return self.button.get_button()
+
+
+class ParseChannelsButton:
+    def __init__(self, buttons_table):
+        self.button = MButton(_('ParseChannels'), 'pchs_')
+        self.buttons_table = buttons_table
+
+    def create_button(self):
+        btf = self.buttons_table.buttons_table_info
+        event = self.buttons_table.event_of_callback_query
+        self.button.button_data += CI[event].selected_user
+        return self.button.get_button()
+
+
+class ShareChannelsButton:
+    def __init__(self, buttons_table):
+        self.button = MButton(_('ShareChannels'), 'shchs_')
+        self.buttons_table = buttons_table
+
+    def create_button(self):
+        btf = self.buttons_table.buttons_table_info
+        event = self.buttons_table.event_of_callback_query
+        self.button.button_data += CI[event].selected_user
+        return self.button.get_button()
+
+
+class SettingsButton(ButtonOfTabale):
+    def __init__(self, buttons_table):
+        self.button = MButton(_('Settings'), 'settings_')
+        self.buttons_table = buttons_table
+
+
+class MyUsersButton(ButtonOfTabale):
+    def __init__(self, buttons_table):
+        self.button = MButton(_('Change user'), 'myusers_')
+        self.buttons_table = buttons_table
+
+
+class MyUsersButton(ButtonOfTabale):
+    def __init__(self, buttons_table):
+        self.button = MButton(_('Change user'), 'myusers_')
+        self.buttons_table = buttons_table
+
+
+class LogOutUserButton(ButtonOfTabale):
+    def __init__(self, buttons_table):
+        self.button = MButton(_('Log out user'), 'conflogout')
+        self.buttons_table = buttons_table
+
+
+class DeleteUserButton(ButtonOfTabale):
+    def __init__(self, buttons_table):
+        self.button = MButton(_('Delete user'), 'deluser')
+        self.buttons_table = buttons_table
+
+
+class LanguageButton(ButtonOfTabale):
+    def __init__(self, buttons_table):
+        self.button = MButton(_('Change language'), 'language_')
+        self.buttons_table = buttons_table
+
+
+class GetAllButtons(ButtonOfTabale):
 
     def __init__(self, buttons_table: ButtonsTableOfDataFromDatabase, enable=False):
         self.buttons = []
         btf = buttons_table.buttons_table_info
-        data = buttons_table.event_of_callback_query.data.decode()
-        _k, _k_data, back_path = get_k_kdata_backpath_from_data(buttons_table.event_of_callback_query.data)
+        _k, _k_data, name_of_k = CI[buttons_table.event_of_callback_query].get_var_of_last_path()
+
         get_all_list = db_get_all_smth(_k, _k_data)
         if not get_all_list:
             return
         for name, key_and_enable in get_all_list.items():
-            # get path!!!!!!!!
-            buttons_ = [Button.inline(f'{name}', f'{btf.key_sub}_{key_and_enable[0]}_{data}')]
+            buttons_ = [Button.inline(f'{name}', f'{btf.key_sub}_{key_and_enable[0]}_')]
             if enable:
                 if key_and_enable[1]:
-                    buttons_.append(Button.inline(_('✅ (click to disable)'), f'switch_{_k}_{key_and_enable[0]}_{data}'))
+                    buttons_.append(Button.inline(_('✅ (click to disable)'), f'switch_{_k}_{key_and_enable[0]}'))
                 if not key_and_enable[1]:
-                    buttons_.append(Button.inline(_('❌ (click to enable)'), f'switch_{_k}_{key_and_enable[0]}_{data}'))
+                    buttons_.append(Button.inline(_('❌ (click to enable)'), f'switch_{_k}_{key_and_enable[0]}'))
             self.buttons.append(buttons_)
 
     def create_button(self):
         return self.buttons
 
 
-dict_for_back_buttons = {  # {название ключа: (куда возвращаться, название для кнопки back to , где искать ключ
-    # для возврата) }
-    'tickersofuser': ('usermenu', _('Menu of user '), '*'),
-    'ticker': ('tickersofuser', _('Tickers of '), 'Ticker', 'key_ticker', 'key_user'),
-    'tag': ('ticker', 'Ticker ', 'Tag', 'key_tag', 'key_ticker'),
-}
 dict_for_data_buttons = {
     'tickersofuser': ('ticker', _('Ticker'), 'key_user', ['key_ticker', 'ticker']),
     'ticker': ('tag', _('Tag'), 'key_ticker', ['key_tag', 'tag']),
@@ -288,9 +361,7 @@ dict_for_data_buttons = {
 
 class ButtonsTable:
     title_msg_ = _('Nothing Title of Buttons Table')
-    event_of_callback_query = None
-    buttons_list = []
-    buttons_table_info = None
+    error_msg = None
 
     def __init__(self, event, type_buttons_of_key: TypeButtonsABC):
         self.event_of_callback_query = event
@@ -306,68 +377,46 @@ class ButtonsTable:
         return await function_of_react(*args, **kwargs)
 
     async def display_buttons(self, send_msg=False):
+        if self.error_msg is not None:
+            message = await self.event_of_callback_query.answer(self.error_msg, alert=True)
+            return []
         if send_msg:
             message = await self.event_of_callback_query.respond(f'{self.title_msg_}', buttons=self.buttons_list)
         else:
             message = await self.event_of_callback_query.edit(f'{self.title_msg_}', buttons=self.buttons_list)
-        return message
+        return [message.id]
 
 
 class ButtonsTableOfDataFromDatabase(ButtonsTable):
-    name_of_key = ''
-    database_key = ''
-    buttons_list = []
 
-    def __init__(self, event, type_buttons_of_key):
+    def __init__(self, event, type_buttons_of_key, full_data):
         super().__init__(event, type_buttons_of_key)
-        self.title_msg_ = self.get_title()
+        self._ = CI[event]._
+        # user_logging = CI[event].selected_user
+        # update path
+        try:
+            CI[event].update_path(full_data, self.buttons_table_info.key)
+            if callable(getattr(self.buttons_table_info, 'do_smth', None)):
+                getattr(self.buttons_table_info, 'do_smth')(event)
+        except ExceptionNotFindInDB as ex:
+            self.error_msg = ex
+            return
 
+        user_logging = CI[event].selected_user
+        self.title_msg_ = self.get_title()
         self.buttons_list = []
         for mbutton in self.buttons_table_info.available_control_buttons:
             self.buttons_list.append([mbutton(self).create_button()])
-        if self.buttons_table_info.get_all:
+        # get all from db
+        if getattr(self.buttons_table_info, 'get_all', False):
             buttons_ = GetAllButtons(self, enable=self.buttons_table_info.enable).create_button()
             self.buttons_list.extend(buttons_)
 
-    def get_title(self):
-        if self.buttons_table_info.key in ['tickers', 'parsechannels', 'sharechannels']:
-            return self.buttons_table_info.title_msg_
-        event = self.event_of_callback_query
-        _k, _k_data, back_path = get_k_kdata_backpath_from_data(event.data)
-        res_db = db_get_1(_k, _k_data)
-        if not res_db:
-            return []
-        name_of_k = res_db.pop()
-        return self.buttons_table_info.title_msg_ + ' ' + name_of_k
+    def get_title(self) -> str:
 
-    def _create_back_button(self):
-
-        self.back_button.button_msg += self.buttons_table_info.back_msg
-        if self.buttons_table_info.key == 'usermenu':
-            self.back_button.button_data = self.user_logging + '_' + 'Usermenu'
-        else:
-            get_list = get_smth_from_database(self.event_of_callback_query.sender_id,
-                                              self.user_logging,
-                                              self.buttons_table_info.back_key_db_where_search,
-                                              {self.button_back_info[3]: self.database_key},
-                                              [self.button_back_info[4]],
-                                              only_one_result=True)
-            self.back_button.button_data = self.user_logging + '_' + self.button_back_info[0] + '_' + get_list[0]
-
-    def get_buttons(self):
-        self.buttons_list.append(
-            [self.back_button.get_button()],
-        )
-        return self.buttons_list
-
-    def send_message(self):
-        pass
-
-    def edit_message(self):
-        pass
-
-    def get_list_with_userlogging_and_key_and_keydata_from_eventdata(data):
-        return data.decode().split('_', maxsplit=2)
+        if self.buttons_table_info.key in ['usermanager', 'user', 'settings']:
+            return self.buttons_table_info.title_msg_.format(CI[self.event_of_callback_query].selected_user)
+        return self._(self.buttons_table_info.title_msg_.format(CI[self.event_of_callback_query].path[-1].name_of_k))
 
 
 class TypeButtonsABC(ABC):
@@ -378,17 +427,9 @@ class TypeButtonsABC(ABC):
     pass
 
 
-dict_for_back_buttons = {  # {название ключа: (куда возвращаться, название для кнопки back to , где искать ключ
-    # для возврата) }
-    'tickersofuser': ('usermenu', _('Menu of user '), '*'),
-    'ticker': ('tickersofuser', _('Tickers of '), 'Ticker', 'key_ticker', 'key_user'),
-    'tag': ('ticker', _('Ticker '), 'Tag', 'key_tag', 'key_ticker'),
-}
-
-
-class TagButtons(TypeButtonsABC):
+class TagButtonsTable(TypeButtonsABC):
     key = 'tag'
-    title_msg_ = ' Tag is'
+    title_msg_ = ' Tag is {}'
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (BackButton, EditButton, DeleteButton)
     back_msg = _(' Ticker')
@@ -397,73 +438,38 @@ class TagButtons(TypeButtonsABC):
     get_all = False
     enable = False
 
-    # end
-    # end
-    # end
-    # end
-    # end
-    # end
-    # end
-    # end
-    # end
-    # end
-    # back_msg = _('Tickers of user')
-    # back_db_base = 'Tag'
-    # btf.back_db_rescolumn = 'key_ticker'
-    #
-    # buttons_table = ButtonsTableOfDataFromDatabase
-    # title_msg_ = 'Tag is'
-    #
-    #
-    # back_msg = _('Tickers of user')  ## 'back to ticker'
-    # back_key = 'ticker'
-    # back_key_db_where_search = 'Tag'
-    # back_key_db_filter = 'НЕ помню нужно свпомнить'
-    #
-    # def __new__(cls, *args, **kwargs):
-    #     return
-    #
-    # def get_title(self):
-    #     pass
-    #
-    # buttons_list = []
 
-
-class TagsButtons(TypeButtonsABC):
+class TagsButtonsTable(TypeButtonsABC):
     key = 'tags'
-    title_msg_ = _(' Taker is')
+    title_msg_ = _(' Tags of {}')
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (BackButton, AddNewButton, EditButton, DeleteButton)
     back_msg = _(' Tickers')
     add_msg = _(' Tag')
+    add_to_msg = _(' Ticker')
     edit_msg = _(' Ticker name')
     delete_msg = _(' Ticker')
     key_sub = 'tag'
     get_all = True
     enable = True
 
-    def __new__(cls, *args, **kwargs):
-        return
 
-
-class TickersButttons(TypeButtonsABC):
+class TickersButtonsTable(TypeButtonsABC):
     key = 'tickers'
-    title_msg_ = _(' Takers of ')
+    title_msg_ = _(' Takers of {}')
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (BackButton, AddNewButton)
     back_msg = _(' User')
     add_msg = _(' Ticker')
+    add_to_msg = _(' User')
     key_sub = 'tags'
     get_all = True
     enable = True
 
-    def __new__(cls, *args, **kwargs):
-        return
 
-
-class ParseChannelBattons(TypeButtonsABC):
-    key = 'parsechannel'
-    title_msg_ = _(' Parse channel')
+class ParseChannelButtonsTable(TypeButtonsABC):
+    key = 'pch'
+    title_msg_ = _(' Parse channel is {}')
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (BackButton, EditButton, DeleteButton)
     back_msg = _(' Parse channels of user')
@@ -472,28 +478,23 @@ class ParseChannelBattons(TypeButtonsABC):
     get_all = False
     enable = False
 
-    def __new__(cls, *args, **kwargs):
-        return
 
-
-class ParseChannelsBattons(TypeButtonsABC):
-    key = 'parsechannels'
-    title_msg_ = _(' Parse channels of user')
+class ParseChannelsButtonsTable(TypeButtonsABC):
+    key = 'pchs'
+    title_msg_ = _(' Parse channels of user: {}')
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (BackButton, AddNewButton)
     back_msg = _(' User')
     add_msg = _(' Parse channel')
+    add_to_msg = _(' User')
     key_sub = 'parsechannel'
     get_all = True
     enable = True
 
-    def __new__(cls, *args, **kwargs):
-        return
 
-
-class ShareChannelBattons(TypeButtonsABC):
-    key = 'sharechannel'
-    title_msg_ = _(' Share channel')
+class ShareChannelBattonsTable(TypeButtonsABC):
+    key = 'shch'
+    title_msg_ = _(' Share channel is {}')
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (BackButton, EditButton, DeleteButton)
     back_msg = _(' Share channels of user')
@@ -502,120 +503,57 @@ class ShareChannelBattons(TypeButtonsABC):
     get_all = False
     enable = False
 
-    def __new__(cls, *args, **kwargs):
-        return
 
-
-class ShareChannelsBattons(TypeButtonsABC):
-    key = 'sharechannels'
-    title_msg_ = _(' Parse channels of user')
+class ShareChannelsButtonsTable(TypeButtonsABC):
+    key = 'shchs'
+    title_msg_ = _(' Parse channels of user: {}')
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (BackButton, AddNewButton)
     back_msg = _(' User')
     add_msg = _(' Share channel')
+    add_to_msg = _(' User')
     key_sub = 'sharechannel'
     get_all = True
     enable = True
 
-    def __new__(cls, *args, **kwargs):
-        return
+
+class UserManagerButtonsTable(TypeButtonsABC):
+    key = 'usermanager'
+    title_msg_ = _('Here it is {}! \n What do you want to do?')
+    buttons_table = ButtonsTableOfDataFromDatabase
+    available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
+    get_all = False
+    enable = False
+
+
+class UserButtonsButtons(TypeButtonsABC):
+    key = 'user'
+    title_msg_ = _('Here it is {}! \n What do you want to do?')
+    buttons_table = ButtonsTableOfDataFromDatabase
+    available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
+    get_all = False
+    enable = False
+
+    @staticmethod
+    def change_user(event):
+        new_name = CI[event].path[-1].data
+        CI[event].selected_user = new_name
+
+    do_smth = change_user
+
+
+class SettingsButtonsTable(TypeButtonsABC):
+    key = 'settings'
+    title_msg_ = _('settings')
+    buttons_table = ButtonsTableOfDataFromDatabase
+    available_control_buttons = (LogOutUserButton, DeleteUserButton, LanguageButton, MyUsersButton,)
+    get_all = False
+    enable = False
 
 
 # _________________________________________________________________________________________________________________________________________________________________________
 # bot`s handlers
 # BOT_handler_my_users (command /myusers) in button`s handler Bot_handler_button_myuseres
-
-
-@events.register(events.NewMessage(pattern='/set'))
-async def BOT_handler_set_data(event):
-    _ = CI[event]._
-    try:
-        list_ = event.message.text.split(maxsplit=2)
-        if len(list_) < 2:
-            raise NotCorrectExc
-        set__, data = list_[0:2]
-        setlist_ = list_[0].split('_', maxsplit=2)
-        if len(setlist_) < 3:
-            raise NotCorrectExc
-        _, user_logging, arg = setlist_
-
-        set_data(event.sender_id, user_logging, arg, data)
-        await event.reply(f"Данные сохранены: session '{user_logging}':{arg}: {data}")
-    except NotCorrectExc as e:
-        await event.reply(f'{e}\n'
-                          'Введена неправильная команда.\nExample: "/set_username_*** value"\n*** - one of:\n for '
-                          'start script;\n{} for other set')
-    except UserNotFoundExc as e:
-        await event.reply(f'Пользователь не найден\n'
-                          f'Чтобы создать ползователя используйте команду {command_dict["add_user"]}')
-    except:
-        logger.error('Что-то пошло не так', exc_info=True)
-        await event.reply('Что-то пошло не так')
-        raise
-    finally:
-        raise events.StopPropagation
-
-
-@events.register(events.NewMessage(pattern='/get'))
-async def BOT_handler_get_data(event):
-    _ = CI[event]._
-    try:
-        getlist_ = event.message.text.split(maxsplit=1)[0].split('_', maxsplit=2)
-        if len(getlist_) < 3:
-            raise NotCorrectExc
-        _, user_logging, arg = getlist_
-
-        value_arg = get_data_for_str_request(event.sender_id, user_logging, arg)
-        await event.reply(f"username '{user_logging}': {arg}:: {value_arg}")
-    except NotCorrectExc as e:
-        await event.reply(f'{e}\nВведена неправильная команда.\n'
-                          f'Example: "/get_username_***"\n*** - one of: {command_get_list}')
-
-    except UserNotFoundExc as e:
-        await event.reply(f'Пользователь не найден\n'
-                          f'Чтобы создать ползователя используйте команду {command_dict["add_user"]}')
-
-    except:
-        logger.error('Что-то пошло не так', exc_info=True)
-        await event.reply('Что-то пошло не так')
-        raise
-    finally:
-        raise events.StopPropagation
-
-
-@events.register(events.NewMessage(pattern='/add'))
-async def BOT_handler_add_data(event):
-    _ = CI[event]._
-    try:
-        list_ = event.message.text.split()
-        if len(list_) < 2:
-            raise NotCorrectExc
-        add__, data = list_[0], list_[1:]
-        addlist_ = add__.split('_', maxsplit=2)
-        if len(addlist_) != 3:
-            raise NotCorrectExc
-        _, user_logging, arg = addlist_
-
-        for i in data:
-            set_data(event.sender_id, user_logging, arg, i)
-        await event.reply(f"Данные сохранены: username '{user_logging}':{arg}: {data}")
-
-    except NotCorrectExc as e:
-        await event.reply(f'{e}\nВведена неправильная команда.\n'
-                          f'Example: "/add_username_*** value"\n*** - one of:\n{command_add_list}')
-    except DataDuplicateExc as e:
-        await event.reply(f'{e}')
-
-    except UserNotFoundExc as e:
-        await event.reply(f'Пользователь не найден\n'
-                          f'Чтобы создать ползователя используйте команду {command_dict["add_user"]}')
-
-    except:
-        logger.error('Что-то пошло не так', exc_info=True)
-        await event.reply('Что-то пошло не так')
-        raise
-    finally:
-        raise events.StopPropagation
 
 
 @events.register(events.NewMessage(pattern='/start_script'))
@@ -635,36 +573,6 @@ async def BOT_handler_cancel(event):
         await BOT_handler_language_command(event, stop_propagation=False)
     await event.client.send_message(event.sender_id, _('Echo mod active'))
     return []
-
-
-# _______________________________________________________
-# state buttons
-class BuilderButtonsTable:
-    dict_for_type_buttons_by_key = {}
-    for cls in globals()['TypeButtonsABC'].__subclasses__():
-        dict_for_type_buttons_by_key[cls.key] = cls
-
-    def __init__(self, event):
-        self.event = event
-
-    def build(self):
-        key = self.get_key_for_button_key(self.event.data)
-        type_buttons = self.dict_for_type_buttons_by_key[key]
-        result = type_buttons.buttons_table(self.event, type_buttons)
-        return result
-
-    @staticmethod
-    def get_key_for_button_key(data):
-        return data.decode().split('_', maxsplit=2)[0]
-
-
-# @events.register(events.CallbackQuery())
-# async def test_all_callbackquerry(event):
-#     await event.client.send_message(event.sender_id, 'GOOOD')
-#
-#     #button_table = BuilderButtonsTable(event).build()
-#     #await button_table.reaction_on_click()
-#     raise events.StopPropagation
 
 
 @events.register(events.NewMessage(pattern='/myusers'))
@@ -759,7 +667,8 @@ async def BOT_newuser_create_user(fun, args, kwargs):
     add_new_user_to_database(user_logging, chat_info.chat_state_data['password'], event.sender_id)
     await event.respond(_('User {} WAS CREATED 🎉🎉🎉🎉').format(user_logging))
     chat_info.selected_user = user_logging
-    msgs = await send_button_table_user(event, user_logging)
+    msgs = await BOT_handler_callback_buttons_table(event, send_msg=True, custom_data=f'user_{user_logging}')
+    # msgs = await send_button_table_user(event, user_logging)
     return msgs
 
 
@@ -841,9 +750,9 @@ async def send_button_table_user(event, user_logging):
     _ = CI[event]._
     header = _('Here it is {}! \n What do you want to do?').format(user_logging)
     buttons = [
-        [Button.inline(_('Tickers'), f'tickers_{user_logging}_user_{user_logging}')],
-        [Button.inline(_('Parse Channels'), f'parsechannels_{user_logging}_user_{user_logging}')],
-        [Button.inline(_('Share Channels'), f'sharechannels_{user_logging}_user_{user_logging}')],
+        [Button.inline(_('Tickers'), f'tickers_{user_logging}')],
+        [Button.inline(_('Parse Channels'), f'parsechannels_{user_logging}')],
+        [Button.inline(_('Share Channels'), f'sharechannels_{user_logging}')],
         [Button.inline(_('User Settings'), f'settings_{user_logging}')],
         [Button.inline(_('Change user'), 'myusers_')],
     ]
@@ -855,18 +764,18 @@ async def send_button_table_user(event, user_logging):
         return [message.id]
 
 
-@events.register(events.NewMessage(pattern='/usermanager'))
-@fsm_decor(st.ActionCommand())
-async def BOT_handler_usermanager_command(event):
-    _ = CI[event]._
-    user_logging = CI[event].selected_user
-    res = await send_button_table_user(event, user_logging)
-    return res
+# @events.register(events.NewMessage(pattern='/usermanager'))
+# @fsm_decor(st.ActionCommand())
+# async def BOT_handler_usermanager_command(event):
+#     _ = CI[event]._
+#     user_logging = CI[event].selected_user
+#     res = await send_button_table_user(event, user_logging)
+#     return res
 
 
 @events.register(events.CallbackQuery(pattern='user_'))
 @fsm_decor(st.ActionCallBack())
-async def BOT_handler_button_user(event):
+async def BOT_handler_button_user(event, buttons_table=None, stop_propagation=True):
     _ = CI[event]._
     user_logging = get_list_with_key_and_keydata_from_eventdata(event.data).pop()
     if user_logging:
@@ -885,68 +794,41 @@ dict_smth_for_buttons_table = {
 }
 
 
-# tickers: back, new, enable
-# tags: back, new, edit, delete, enable tag
-# tag: back, edit, delete
-# shar_channels: back, new, enable chan
-# shar_channel: back, edit, delete
-# parse_channels: back, new, enable chan
-# parse_channel: back, edit, delete
-
-
 # DBOT_handler_button_tickers = events.register(events.CallbackQuery(pattern='tickers_|tags_'))(BOT_handler_button_tickers)
 # @events.register(events.CallbackQuery(pattern='tickers_|tags_'))    # Добавлено ниже
 # @fsm_decor(st.ActionCallBack())   # Добавлено ниже
-async def BOT_handler_button_tickers(event, stop_propagation=True, send_msg=False):
+async def BOT_handler_callback_buttons_table(event, stop_propagation=True, send_msg=False, custom_data=None):
     _ = CI[event]._
-    # event data have struct: nowcomand_back_key_data_back_key_data_...._myusers_
     builder = BuilderButtonsTable(event)
-    buttons_table = builder.build()
-    message = await buttons_table.reaction_on_click(send_msg=send_msg)
-    return [message.id]
-    # _k, _k_data = get_list_with_key_and_keydata_from_eventdata(event.data)
-    # user_logging = CI[event].selected_user
-    # get_all_list = db_get_all_smth(_k, _k_data)
-    # buttons = [
-    #     [Button.inline(_('« Back to User'), f'user_')],
-    #     [Button.inline(_('Add New Tickers'), f'add_ticker_{CI[event].selected_user}')]]
-    # buttons_ = []
-    # if tickers_list:
-    #     for ticker in tickers_list:
-    #         buttons_ = [Button.inline(f'{ticker.ticker}', f'tags_{ticker.key_ticker}')]
-    #         if ticker.enable:
-    #             buttons_.append(Button.inline(_('✅ (click to disable)'), f'switch_ticker_{ticker.key_ticker}'))
-    #         if not ticker.enable:
-    #             buttons_.append(Button.inline(_('❌ (click to enable)'), f'switch_ticker_{ticker.key_ticker}'))
-    #         buttons.append(buttons_)
-    #     # buttons_ = [Button.inline(f'{ticker.ticker}', f'tags_{ticker.key_ticker}') for ticker in tickers_list]
-    #     # buttons_ = [buttons_[:1], ] + list(split_(buttons_[1:], 3))
-    # # buttons = buttons + buttons_
-    # if send_msg:
-    #     message = await event.respond(_('It is tickers of {} ! \n What do you want to do?').format(user_logging),
-    #                                   buttons=buttons)
-    # else:
-    #     message = await event.edit(_('It is tickers of {} ! \n What do you want to do?').format(user_logging),
-    #                                buttons=buttons)
-    # return [message.id]
+    buttons_table = builder.build(full_data=custom_data)
+    if isinstance(event, events.NewMessage.Event):
+        send_msg = True
+    message_id = await buttons_table.reaction_on_click(send_msg=send_msg)
+    return message_id
 
 
 DBOT_handler_button_tickers = events.register(
-    events.CallbackQuery(pattern='tickers_|tags_|tag_|parsechannels_|sharechannels_'))(
-    fsm_decor(st.ActionCallBack())(BOT_handler_button_tickers))
+    events.CallbackQuery(pattern='tickers_|tags_|tag_|parsechannels_|sharechannels_|user_|usermanager_|settings_'))(
+    fsm_decor(st.ActionCallBack())(
+        BOT_handler_callback_buttons_table))
+DBOT = events.register(
+    events.NewMessage(pattern='/usermanager'))(
+    fsm_decor(st.ActionCommand())(
+        BOT_handler_callback_buttons_table))
 
 
 @events.register(events.CallbackQuery(pattern='switch_'))
 @fsm_decor(st.ActionCallBack())
 async def BOT_handler_switch_some(event):
     _ = CI[event]._
-    _k, _k_data, back_path = comand_get_k_kdata_backpath_from_data(event.data)
+    __, _k, _k_data = data.decode().split('_', maxsplit=2)
     res = db_switch_some_for_user(_k, _k_data)
     if not res:
         await event.answer()
+        return []
     else:
-        event.query.data = back_path.encode(encoding='utf-8')
-        message_id = await BOT_handler_button_tickers(event)
+        event.query.data = CI[event].get_last_path().encode(encoding='utf-8')
+        message_id = await BOT_handler_callback_buttons_table(event)
     return message_id
 
 
@@ -957,24 +839,24 @@ async def BOT_handler_add_confirm(fun, args, kwargs):
     event = args[0]
     _ = CI[event]._
     user_logging = CI[event].selected_user
-    _k = CI[event].chat_state_data['state_add_key']
-    back_path = CI[event].chat_state_data['state_add_back_path']
-    name_of_k = CI[event].chat_state_data['state_add_name_key']
+    _k, _k_data, name_of_k = CI[event].get_var_of_last_path(from_saved=True)
 
     confirm_list_of_add = check_and_get_add_text(event.text)
     if not confirm_list_of_add:
         message = await event.respond(_(
             'False input, try again. Input new {}. Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3'))
         return [event.id, message.id]
-    CI[event].chat_state_data['state_add_data_list'] = confirm_list_of_add
 
-    buttons = [[Button.inline(_('Yes, add'), f'addnextconfirmyes_{back_path}')],
-               [Button.inline(_('No'), f'addnextconfirmno_{back_path}')]]
+    CI[event].chat_state_data['state_add_data_list'] = confirm_list_of_add
+    buttons = [[Button.inline(_('Yes, add'), f'addnextconfirmyes_')],
+               [Button.inline(_('No'), f'addnextconfirmno_')]]
     message = await event.respond(
-        _('Do you want add {0} to: \n{1}').format(name_of_key[_k] + ' ' + name_of_k, '\n'.join(confirm_list_of_add)),
+        _('Do you want add to {}:\n{}\n{}\n').format(dict_for_type_buttons_by_key[_k].add_msg,
+                                                     name_of_k,
+                                                     '\n'.join(confirm_list_of_add)),
         buttons=buttons)
     CI[event].chat_state.next_sub_state = BOT_handler_add_confirm_received_msg
-    return [event.id]
+    return [event.id, message.id]
 
 
 async def BOT_handler_add_confirm_received_msg(fun, args, kwargs):
@@ -984,105 +866,59 @@ async def BOT_handler_add_confirm_received_msg(fun, args, kwargs):
     return [message.id, event.id]
 
 
-# @events.register(events.CallbackQuery(pattern='addnextconfirmno_'))
-# @fsm_decor(st.ActionCallBack())
-# async def BOT_handler_add_confirm_no_and_finish(event):
-#     CI[event].chat_state.finish_and_change_state = True
-#     CI[event].chat_state.next_sub_state = BOT_handler_add_no_add
-#     return []
-#
-#
-# async def BOT_handler_add_no_add(fun, args, kwarg):
-#     event = args[0]
-#     _ = CI[event]._
-#     event.query.data = CI[event].chat_state_data['back_path']
-#     message_id = await BOT_handler_button_tickers(event, send_msg=True)
-#     return message_id
-
-
-
 @events.register(events.CallbackQuery(pattern='addnextconfirmyes_|addnextconfirmno_'))
 @fsm_decor(st.ActionCallBack())
-async def BOT_handler_add_confirm_yes_and_finish(event):
+async def BOT_handler_add_confirm_and_finish(event):
     CI[event].chat_state.finish_and_change_state = True
-    CI[event].chat_state_data['state_add_result_confirm'] = event.data.decode().split('_',maxsplit=1).pop(0)
-    CI[event].chat_state.next_sub_state = BOT_handler_add_add
+    CI[event].chat_state_data['state_add_result_confirm'] = event.data.decode()
+    CI[event].chat_state.next_sub_state = BOT_handler_add_finish
     return []
 
 
-async def BOT_handler_add_add(fun, args, kwarg):
+async def BOT_handler_add_finish(fun, args, kwarg):
     event = args[0]
     _ = CI[event]._
     user_logging = CI[event].selected_user
     add_data_list = CI[event].chat_state_data['state_add_data_list']
-    name_of_k = CI[event].chat_state_data['state_add_name_key']
-    _k, _k_data, back_path = comand_get_k_kdata_backpath_from_data(event.data)
+    _k, _k_data, name_of_k = CI[event].get_var_of_last_path(from_saved=True)
 
-    if CI[event].chat_state_data['state_add_result_confirm'] == 'addnextconfirmyes':
+    if CI[event].chat_state_data['state_add_result_confirm'] == 'addnextconfirmyes_':
         successfully_add = db_add_smth_for_user(_k, _k_data, add_data_list)
         if not successfully_add:
-            await event.edit(_('Error add. Try again'))
+            await event.respond(_('Error add. Try again'))
         else:
-            await event.edit(_('Great. To  add:\n {}').format('\n'.join(add_data_list)))
-    event.query.data = back_path.encode(encoding='utf-8')
-    message_id = await BOT_handler_button_tickers(event, send_msg=False)
+            await event.respond(_('Great. To {}: \n{}\n add {}:\n {}').format(
+                dict_for_type_buttons_by_key[_k].add_to_msg,
+                name_of_k,
+                dict_for_type_buttons_by_key[_k].add_msg,
+                '\n'.join(add_data_list)))
+    event.query.data = CI[event].get_last_path(from_saved=True).encode(encoding='utf-8')
+    message_id = await BOT_handler_callback_buttons_table(event, send_msg=True)
     return message_id
 
 
 @events.register(events.CallbackQuery(pattern='add_'))
 @fsm_decor(st.ActionChangeStateToConversation(st.StateConversation, next_sub_state=BOT_handler_add_confirm))
-async def BOT_handler_button_add_tickers_input(event):
+async def BOT_handler_button_add(event):
     _ = CI[event]._
-    _k, _k_data, back_path = comand_get_k_kdata_backpath_from_data(event.data)
-    # /get name_of_k
-    if _k in ['tickers', 'parsechannels', 'sharechannels']:
-        name_of_k = CI[event].selected_user
-    else:
-        res_db = db_get_1(_k, _k_data)
-        if not res_db:
-            return []
-        name_of_k = res_db.pop()
-    # get name_of_k/
-    message = await event.respond(
-        _('Input new {} to\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3').format(name_of_key[_k], name_of_k))
-    # CI[event].chat_state_data['state_add_key'] = _k
-    # CI[event].chat_state_data['state_add_key_data'] = _k_data
-    CI[event].chat_state_data['state_add_name_key'] = name_of_k
-    CI[event].chat_state_data['state_add_key'] = _k
-    CI[event].chat_state_data['state_add_back_path'] = '_'.join([_k, _k_data, back_path])
+    _k, _k_data, name_of_k = CI[event].get_var_of_last_path()
+    CI[event].save_path_for_state()
 
+    message = await event.respond(
+        _(
+            'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3').format(
+            dict_for_type_buttons_by_key[_k].add_msg,
+            dict_for_type_buttons_by_key[_k].add_to_msg,
+            name_of_k
+        )
+    )
     return [message.id]
 
 
 # _________________________________________________________________________________________________________________________________________________________________________
-
-
-# @events.register(events.CallbackQuery(pattern='tags_'))
-# async def BOT_handler_button_tags(event):
-#     _ = CI[event]._
-#     key_ticker = get_list_with_key_and_keydata_from_eventdata(event.data)
-#     buttons = [
-#         [Button.inline(_('« Back to User'), f'user_{user_logging}')],
-#         [Button.inline(_('Add New Tickers'), f'addticker_{user_logging}')],
-#         [Button.inline(_('Delete Tickers'), f'delticker_{user_logging}')],
-#     ]
-#
-#
-# @events.register(events.CallbackQuery(pattern='parsechannels_'))
-# async def BOT_handler_button_parsechannels(event):
-#     _ = CI[event]._
-#     pass
-#
-#
-# @events.register(events.CallbackQuery(pattern='sharechannels_'))
-# async def BOT_handler_button_sharechannels(event):
-#     _ = CI[event]._
-#     pass
-
-# _________________________________________________________________________________________________________________________________________________________________________
 # log out user
 
-@events.register(events.CallbackQuery(pattern='conflogout'))
+@events.register(events.CallbackQuery(pattern='conflogout_'))
 @fsm_decor(st.ActionCallBack())
 async def BOT_handler_button_log_out_user_confirm(event):
     _ = CI[event]._
@@ -1119,9 +955,6 @@ async def BOT_handler_button_log_out_user(event):
     return [event.message_id]
 
 
-
-
-
 # _________________________________________________________________________________________________________________________________________________________________________
 # some delete
 
@@ -1130,35 +963,34 @@ async def BOT_handler_button_log_out_user(event):
 async def BOT_handler_button_delete_confirm(event):
     _ = CI[event]._
     logging_user_name = CI[event].selected_user
-    # при confdelete_|deleting_ другие эвенты и даты
-    _k, _k_data, back_path = comand_get_k_kdata_backpath_from_data(event.data)
-    path = '_'.join([_k, _k_data, back_path])
-    res_db = db_get_1(_k, _k_data)
-    if not res_db:
-        return []
-    name_of_k = res_db.pop()
+    _k = CI[event].path[-1].path_key
+    _k_data = CI[event].path[-1].data
+    name_of_k = CI[event].path[-1].name_of_k
     if event.data.decode().startswith('deleting_'):
         res_db = db_del_1(_k, _k_data)
         await event.client.delete_messages(event.chat_id, [event.message_id])
         if res_db:
-            await event.respond(_('Was deleted: \n{}').format(name_of_k))
+            await event.respond(
+                _('Was deleted {}: \n{}\n').format(dict_for_type_buttons_by_key[_k].delete_msg, name_of_k))
         else:
             await event.respond(_('Dont DELETED. TRY AGAIN ‼️'))
-        event.query.data = path.split('_', maxsplit=2).pop().encode('utf_8')
-        message_id = await BOT_handler_button_tickers(event, send_msg=True)
+        event.query.data = CI[event].get_back_path().encode('utf_8')
+        message_id = await BOT_handler_callback_buttons_table(event, send_msg=True)
         return message_id
     if event.data.decode().startswith('confirmdelete_'):
-        buttons = [[Button.inline(_('Yes, delete it'), f'confdelete_{path}')]]
+        buttons = [[Button.inline(_('Yes, delete it'), f'confdelete_')]]
     if event.data.decode().startswith('confdelete_'):
-        buttons = [[Button.inline(_('Yes, i am sure 100%'), f'deleting_{path}')]]
-    buttons.append([Button.inline(_('No, i misclicked'), f'{path}')])
-    buttons.append([Button.inline(_(' « Back'), f'{path}')])
+        buttons = [[Button.inline(_('Yes, i am sure 100%'), f'deleting_')]]
+    buttons.append([Button.inline(_('No, i misclicked'), CI[event].get_last_path())])
+    buttons.append([Button.inline(_(' « Back'), CI[event].get_last_path())])
 
     # import random
     # random.shuffle(buttons)
     await event.edit(_('You are about to delete:\n{}\n . Is that correct?').format(name_of_k),
                      buttons=buttons)  ## not show buttons
     return [event.message_id]
+
+
 # _________________________________________________________________________________________________________________________________________________________________________
 
 
@@ -1178,8 +1010,8 @@ async def BOT_handler_button_deleteuser_confirm(event):
 @fsm_decor(st.ActionCallBack())
 async def BOT_handler_button_settings(event):
     _ = CI[event]._
-    buttons = [[Button.inline(_('Log out user'), 'conflogout')],
-               [Button.inline(_('Delete user'), 'deluser')],
+    buttons = [[Button.inline(_('Log out user'), 'conflogout_')],
+               [Button.inline(_('Delete user'), 'deluser_')],
                [Button.inline(_('Change language'), 'language_')],
                [Button.inline(_('« Back to user manager'), 'user_')]]
     await event.edit(_('Settings'), buttons=buttons)
@@ -1219,20 +1051,11 @@ async def BOT_handler_language_command(event, stop_propagation=True):
     return [message.id]
 
 
-# @events.register(events.CallbackQuery(pattern='changelang_'))
-# async def BOT_handler_button_change_language(event):
-#     language = event.data.decode().split('_', maxsplit=1)[1]
-#     if language in localization.LANGUAGES.keys():
-#         CI[event].change_language(language)
-#     await BOT_handler_button_languages(event)
-#     # raise events.StopPropagation
-
-
 # Wrong data in button
 @events.register(events.CallbackQuery)
 async def BOT_handler_wrong_data_for_button(event):
     _ = CI[event]._
-    await event.client.send_message(event.sender_id, _('WrongCallbackQuery'))
+    await event.client.send_message(event.sender_id, _('WrongCallbackQuery, {}').format(event.data.decode()))
     raise events.StopPropagation
 
 
@@ -1277,3 +1100,33 @@ async def BOT_admin_handler_echo(event):
 
 
 parse_bot_users_state_fsm = st.ParseBotUsersStateFSM()
+
+# _______________________________________________________
+# add buttons
+dict_for_type_buttons_by_key = {}
+for cls in globals()['TypeButtonsABC'].__subclasses__():
+    dict_for_type_buttons_by_key[cls.key] = cls
+
+
+class BuilderButtonsTable:
+
+    def __init__(self, event):
+        self.event = event
+
+    def build(self, full_data=None):
+        if not full_data:
+            full_data = self.get_data()
+        key = full_data.split('_', maxsplit=1)[0]
+        # key = get_key_for_button_key(self.event)
+        type_buttons = dict_for_type_buttons_by_key[key]
+        result = type_buttons.buttons_table(self.event, type_buttons, full_data)
+        return result
+
+    def get_data(self) -> str:
+        if isinstance(self.event, events.NewMessage.Event):
+            return self.event.text.split(' ', maxsplit=2)[0][1:]
+        if isinstance(self.event, events.CallbackQuery.Event):
+            res = self.event.data.decode()
+            if res == 'user_':
+                res = res + CI[self.event].selected_user
+            return res

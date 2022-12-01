@@ -3,12 +3,17 @@ from logger import logger as my_logger
 from localization import localization
 
 from Database.database import db_set_to_chatssettings, db_get_from_chatssettings, db_del, db_get, \
-    db_update_selected_user
+    db_update_selected_user, db_get_1
 from handlers.tools import states as St
 
 # ____________________________________________________________
 # add my logger
 logger = my_logger.get_logger(__name__)
+
+# ____________________________________________________________
+#
+command = ['usermanager', 'add', 'settings']
+nested = ['tickers', 'tags', 'tag', 'pchs', 'pch', 'shchs', 'shch', 'user',]
 
 
 # ____________________________________________________________
@@ -17,6 +22,8 @@ logger = my_logger.get_logger(__name__)
 class ExceptionUserNotSelectedSendAllUsers(Exception):
     pass
 
+class ExceptionNotFindInDB(Exception):
+    pass
 
 class Ev:
     sender_id = 233222
@@ -106,9 +113,10 @@ class ChatSelectedUser(UserId):
 
     @selected_user.setter
     def selected_user(self, key_user):
+        if key_user == '':
+            return
         if not key_user:
             res_db = db_get('ChatsSettings', ['selected_user'], first=True, chat_id=self.chat_id)
-            # key_user = db_get_from_chatssettings(selected_user=key_user)
             key_user = (res_db.pop()).pop()
             self.__selected_user = key_user
         if key_user != self.__selected_user:
@@ -123,13 +131,106 @@ class ChatSelectedUser(UserId):
         db_del('TelegramIdHaveUsers', telegram_id=self.chat_id, key_user=logout_user)
 
 
-class ChatInfo(ChatLanguage, ChatState, ChatSelectedUser):
+class Path(UserId):
+    class Key:
+
+        def __init__(self, key):
+            self.path_key = key
+            self.data = ''
+            self.name_of_k = ''
+            # ex key: 'add_'
+
+        def get_sub_path(self):
+            return self.path_key
+
+    class KeyData:
+
+        def __init__(self, key, data='', name=''):
+            self.path_key = key
+            self.data = data
+            self.name_of_k = name
+
+        def get_sub_path(self):
+            return '_'.join([self.path_key, self.data])
+
+        def __eq__(self, other):
+            """Overrides the default implementation"""
+            if isinstance(other, Path.KeyData) or isinstance(other, Path.Key):
+                return self.path_key == other.path_key
+            return False
+
+    FIRST_PATH = [Key('myusers')]
+
+    def __init__(self, event):
+        super().__init__(event)
+        self.path = self.FIRST_PATH
+        self.saved_path = []
+        # path = [key_data, key_data]
+
+    def update_path(self, full_data, _k):
+        if _k not in nested and _k not in command:
+            raise Exception('key not in command or nested, need add')
+        if _k in command:
+            sub_path = Path.KeyData(_k)
+            # name_of_k = self.get_name_of_key(_k, _k_data)
+        else:
+            _k_data = full_data.split('_', maxsplit=2)[1]
+            name_of_k = self.get_name_of_key(_k, _k_data)
+            sub_path = Path.KeyData(_k, data=_k_data, name=name_of_k)
+
+        if sub_path in self.path:
+            self.path = self.path[:self.path.index(sub_path) + 1]
+            return 'Sub in path'
+        self.path.append(sub_path)
+        return 'Add subpath'
+
+    def save_path_for_state(self):
+        self.saved_path = self.path
+
+    @staticmethod
+    def get_name_of_key(_k, _k_data):
+        res_db = db_get_1(_k, _k_data)
+        if not res_db:
+            raise ExceptionNotFindInDB('not key_data`s name in db')
+        return res_db.pop()
+
+    def get_var_of_last_path(self, from_saved=False):
+        if not from_saved:
+            return [self.path[-1].path_key, self.path[-1].data, self.path[-1].name_of_k]
+        else:
+            return [self.saved_path[-1].path_key, self.saved_path[-1].data, self.saved_path[-1].name_of_k]
+
+    def get_back_path(self, from_saved=False):
+        if not from_saved:
+            return self.path[-2].get_sub_path()
+        else:
+            return self.saved_path[-2].get_sub_path()
+
+    def get_last_path(self, from_saved=False):
+        if not from_saved:
+            return self.path[-1].get_sub_path()
+        else:
+            return self.saved_path[-1].get_sub_path()
+
+
+class ChatInfo(ChatLanguage, ChatState, ChatSelectedUser, Path):
 
     def __init__(self, event):
         ChatLanguage.__init__(self, event)
         ChatState.___init__(self, event)
         ChatSelectedUser.__init__(self, event)
-        # path = ''
+        # self.__path_for_button = Path()
+        Path.__init__(self, event)
+
+
+    # @property
+    # def path(self):
+    #     return self.__path_for_button.path
+
+    # @path.setter
+    # def path(self, path):
+    #     self.__path_for_button
+
 
 class ChatsInfoWorker(type):
     chats_info = {}
@@ -140,7 +241,7 @@ class ChatsInfoWorker(type):
     def __iter__(self):
         return iter(self.chats_info.values())
 
-    def __getitem__(self, event: Ev):
+    def __getitem__(self, event: Ev) -> ChatInfo:
         """
         :type event: Ev
         """
@@ -156,26 +257,3 @@ class ChatsInfoWorker(type):
 
 class CI(metaclass=ChatsInfoWorker):
     pass
-
-
-if __name__ == '__main__':
-    event = Ev()
-    _ = CI[event]._
-    print(_)
-    print(CI.chats_info)
-    CI[event].change_language('ru_RU')
-
-    _w = CI[event]._
-
-    print(_w)
-
-    event.sender_id = 123
-    tr = CI[event]._
-
-    e = Ev()
-    e.sender_id = 123
-    tr2 = CI[e]._
-    print(tr2 is tr)
-    CI[e].change_language('ru_RU')
-    tr = CI[e]._
-    print(tr('Start!'))

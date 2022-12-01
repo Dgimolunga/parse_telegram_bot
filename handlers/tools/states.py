@@ -61,7 +61,8 @@ class StateConversation(State):
         if not isinstance(action, ActionCallBack):
             await event.client.delete_messages(event.chat_id, CS.CI[event].messages_for_delete.need_delete)
         if isinstance(action, ActionCallBack):
-            to_for_next_delete = await fun(*args, **kwargs)
+            # to_for_next_delete = await fun(*args, **kwargs)
+            to_need_delete = await fun(*args, **kwargs)
         if isinstance(action, ActionMassage):
             to_for_next_delete = await self.send_sub_state(fun, args, kwargs)
         if isinstance(action, ActionCommand):
