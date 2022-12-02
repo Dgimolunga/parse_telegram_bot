@@ -1,5 +1,5 @@
 /test_/
-/BOT_admin.session
-/BOT_parse.session
+/BOT_admin.session*
+/BOT_parse.session*
 /logger/log_debug.log
 /Database/USERBOT_DB.db
