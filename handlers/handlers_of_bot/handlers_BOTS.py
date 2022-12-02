@@ -836,7 +836,8 @@ async def BOT_handler_switch_some(event):
 # add some new
 # so so
 # soso2 commit
-#commit to new branch
+# commit to new branch
+# add new line to pull request
 
 async def BOT_handler_add_confirm(fun, args, kwargs):
     event = args[0]
