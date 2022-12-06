@@ -1,2 +1,2 @@
-..\bot_database.py
-..\handlres_BOTS.py
+..\Database\database.py
+..\handlers\handlers_of_bot\handlers_BOTS.py

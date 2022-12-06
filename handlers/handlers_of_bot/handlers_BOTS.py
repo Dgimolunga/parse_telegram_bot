@@ -50,7 +50,7 @@ MAX_SIZE_ADD = 55
 # }
 
 # users_setting = {}
-# name_of_key = {
+# value_of_key = {
 #     'tickers': _('Ticker'),
 #     'tags': _('Ticker'),
 #     'tag': _('Tag'),
@@ -203,7 +203,7 @@ class ButtonOfTabale:
 
 class DeleteButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('Delete this'), 'confirmdelete_')
+        self.button = MButton(buttons_table._('Delete this'), 'confirmdelete_')
         self.buttons_table = buttons_table
 
     def create_button(self):
@@ -215,7 +215,7 @@ class DeleteButton(ButtonOfTabale):
 
 class AddNewButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('Add new'), 'add_')
+        self.button = MButton(buttons_table._('Add new'), 'add_')
         self.buttons_table = buttons_table
 
     def create_button(self):
@@ -234,7 +234,7 @@ class SwitchEnableButton:
 
 class EditButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('Edit this'), 'edit_')
+        self.button = MButton(buttons_table._('Edit this'), 'edit_')
         self.buttons_table = buttons_table
 
     def create_button(self):
@@ -247,7 +247,7 @@ class EditButton(ButtonOfTabale):
 
 class BackButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('« Back to'))
+        self.button = MButton(buttons_table._('« Back to'))
         self.buttons_table = buttons_table
 
     def create_button(self):
@@ -259,7 +259,7 @@ class BackButton(ButtonOfTabale):
 
 class TickersButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('Tickers'), 'tickers_')
+        self.button = MButton(buttons_table._('Tickers'), 'tickers_')
         self.buttons_table = buttons_table
 
     def create_button(self):
@@ -271,7 +271,7 @@ class TickersButton(ButtonOfTabale):
 
 class ParseChannelsButton:
     def __init__(self, buttons_table):
-        self.button = MButton(_('ParseChannels'), 'pchs_')
+        self.button = MButton(buttons_table._('ParseChannels'), 'pchs_')
         self.buttons_table = buttons_table
 
     def create_button(self):
@@ -283,7 +283,7 @@ class ParseChannelsButton:
 
 class ShareChannelsButton:
     def __init__(self, buttons_table):
-        self.button = MButton(_('ShareChannels'), 'shchs_')
+        self.button = MButton(buttons_table._('ShareChannels'), 'shchs_')
         self.buttons_table = buttons_table
 
     def create_button(self):
@@ -295,68 +295,55 @@ class ShareChannelsButton:
 
 class SettingsButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('Settings'), 'settings_')
+        self.button = MButton(buttons_table._('Settings'), 'settings_')
         self.buttons_table = buttons_table
 
 
 class MyUsersButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('Change user'), 'myusers_')
-        self.buttons_table = buttons_table
-
-
-class MyUsersButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(_('Change user'), 'myusers_')
+        self.button = MButton(buttons_table._('Change user'), 'myusers_')
         self.buttons_table = buttons_table
 
 
 class LogOutUserButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('Log out user'), 'conflogout')
+        self.button = MButton(buttons_table._('Log out user'), 'conflogout')
         self.buttons_table = buttons_table
 
 
 class DeleteUserButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('Delete user'), 'deluser')
+        self.button = MButton(buttons_table._('Delete user'), 'deluser')
         self.buttons_table = buttons_table
 
 
 class LanguageButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(_('Change language'), 'language_')
+        self.button = MButton(buttons_table._('Change language'), 'language_')
         self.buttons_table = buttons_table
 
 
 class GetAllButtons(ButtonOfTabale):
 
-    def __init__(self, buttons_table: ButtonsTableOfDataFromDatabase, enable=False):
+    def __init__(self, buttons_table: ButtonsTableOfDataFromDatabase, enable_switch=False):
         self.buttons = []
         btf = buttons_table.buttons_table_info
-        _k, _k_data, name_of_k = CI[buttons_table.event_of_callback_query].get_var_of_last_path()
+        _k, _k_data, value_of_k = CI[buttons_table.event_of_callback_query].get_var_of_last_path()
 
         get_all_list = db_get_all_smth(_k, _k_data)
         if not get_all_list:
             return
-        for name, key_and_enable in get_all_list.items():
-            buttons_ = [Button.inline(f'{name}', f'{btf.key_sub}_{key_and_enable[0]}_')]
-            if enable:
+        for value, key_and_enable in get_all_list.items():
+            buttons_ = [Button.inline(f'{value}', f'{btf.key_sub}_{key_and_enable[0]}_')]
+            if enable_switch:
                 if key_and_enable[1]:
-                    buttons_.append(Button.inline(_('✅ (click to disable)'), f'switch_{_k}_{key_and_enable[0]}'))
+                    buttons_.append(Button.inline(buttons_table._('✅ (click to disable)'), f'switch_{_k}_{key_and_enable[0]}'))
                 if not key_and_enable[1]:
-                    buttons_.append(Button.inline(_('❌ (click to enable)'), f'switch_{_k}_{key_and_enable[0]}'))
+                    buttons_.append(Button.inline(buttons_table._('❌ (click to enable)'), f'switch_{_k}_{key_and_enable[0]}'))
             self.buttons.append(buttons_)
 
     def create_button(self):
         return self.buttons
-
-
-dict_for_data_buttons = {
-    'tickersofuser': ('ticker', _('Ticker'), 'key_user', ['key_ticker', 'ticker']),
-    'ticker': ('tag', _('Tag'), 'key_ticker', ['key_tag', 'tag']),
-    'tag': ('Tag',),
-}
 
 
 class ButtonsTable:
@@ -409,14 +396,14 @@ class ButtonsTableOfDataFromDatabase(ButtonsTable):
             self.buttons_list.append([mbutton(self).create_button()])
         # get all from db
         if getattr(self.buttons_table_info, 'get_all', False):
-            buttons_ = GetAllButtons(self, enable=self.buttons_table_info.enable).create_button()
+            buttons_ = GetAllButtons(self, enable_switch=self.buttons_table_info.enable).create_button()
             self.buttons_list.extend(buttons_)
 
     def get_title(self) -> str:
 
         if self.buttons_table_info.key in ['usermanager', 'user', 'settings']:
-            return self.buttons_table_info.title_msg_.format(CI[self.event_of_callback_query].selected_user)
-        return self._(self.buttons_table_info.title_msg_.format(CI[self.event_of_callback_query].path[-1].name_of_k))
+            return self._(self.buttons_table_info.title_msg_).format(CI[self.event_of_callback_query].selected_user)
+        return self._(self.buttons_table_info.title_msg_).format(CI[self.event_of_callback_query].path[-1].value_of_k)
 
 
 class TypeButtonsABC(ABC):
@@ -429,7 +416,7 @@ class TypeButtonsABC(ABC):
 
 class TagButtonsTable(TypeButtonsABC):
     key = 'tag'
-    title_msg_ = ' Tag is {}'
+    title_msg_ = _(' Tag is {}')
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (BackButton, EditButton, DeleteButton)
     back_msg = _(' Ticker')
@@ -844,7 +831,7 @@ async def BOT_handler_add_confirm(fun, args, kwargs):
     event = args[0]
     _ = CI[event]._
     user_logging = CI[event].selected_user
-    _k, _k_data, name_of_k = CI[event].get_var_of_last_path(from_saved=True)
+    _k, _k_data, value_of_k = CI[event].get_var_of_last_path(from_saved=True)
 
     confirm_list_of_add = check_and_get_add_text(event.text)
     if not confirm_list_of_add:
@@ -857,7 +844,7 @@ async def BOT_handler_add_confirm(fun, args, kwargs):
                [Button.inline(_('No'), f'addnextconfirmno_')]]
     message = await event.respond(
         _('Do you want add to {}:\n{}\n{}\n').format(dict_for_type_buttons_by_key[_k].add_msg,
-                                                     name_of_k,
+                                                     value_of_k,
                                                      '\n'.join(confirm_list_of_add)),
         buttons=buttons)
     CI[event].chat_state.next_sub_state = BOT_handler_add_confirm_received_msg
@@ -885,7 +872,7 @@ async def BOT_handler_add_finish(fun, args, kwarg):
     _ = CI[event]._
     user_logging = CI[event].selected_user
     add_data_list = CI[event].chat_state_data['state_add_data_list']
-    _k, _k_data, name_of_k = CI[event].get_var_of_last_path(from_saved=True)
+    _k, _k_data, value_of_k = CI[event].get_var_of_last_path(from_saved=True)
 
     if CI[event].chat_state_data['state_add_result_confirm'] == 'addnextconfirmyes_':
         successfully_add = db_add_smth_for_user(_k, _k_data, add_data_list)
@@ -894,7 +881,7 @@ async def BOT_handler_add_finish(fun, args, kwarg):
         else:
             await event.respond(_('Great. To {}: \n{}\n add {}:\n {}').format(
                 dict_for_type_buttons_by_key[_k].add_to_msg,
-                name_of_k,
+                value_of_k,
                 dict_for_type_buttons_by_key[_k].add_msg,
                 '\n'.join(add_data_list)))
     event.query.data = CI[event].get_last_path(from_saved=True).encode(encoding='utf-8')
@@ -906,7 +893,7 @@ async def BOT_handler_add_finish(fun, args, kwarg):
 @fsm_decor(st.ActionChangeStateToConversation(st.StateConversation, next_sub_state=BOT_handler_add_confirm))
 async def BOT_handler_button_add(event):
     _ = CI[event]._
-    _k, _k_data, name_of_k = CI[event].get_var_of_last_path()
+    _k, _k_data, value_of_k = CI[event].get_var_of_last_path()
     CI[event].save_path_for_state()
 
     message = await event.respond(
@@ -914,7 +901,7 @@ async def BOT_handler_button_add(event):
             'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3').format(
             dict_for_type_buttons_by_key[_k].add_msg,
             dict_for_type_buttons_by_key[_k].add_to_msg,
-            name_of_k
+            value_of_k
         )
     )
     return [message.id]
@@ -968,15 +955,14 @@ async def BOT_handler_button_log_out_user(event):
 async def BOT_handler_button_delete_confirm(event):
     _ = CI[event]._
     logging_user_name = CI[event].selected_user
-    _k = CI[event].path[-1].path_key
-    _k_data = CI[event].path[-1].data
-    name_of_k = CI[event].path[-1].name_of_k
+    _k, _k_data, value_of_k = CI[event].get_var_of_last_path()
+
     if event.data.decode().startswith('deleting_'):
         res_db = db_del_1(_k, _k_data)
         await event.client.delete_messages(event.chat_id, [event.message_id])
         if res_db:
             await event.respond(
-                _('Was deleted {}: \n{}\n').format(dict_for_type_buttons_by_key[_k].delete_msg, name_of_k))
+                _('Was deleted {}: \n{}\n').format(dict_for_type_buttons_by_key[_k].delete_msg, value_of_k))
         else:
             await event.respond(_('Dont DELETED. TRY AGAIN ‼️'))
         event.query.data = CI[event].get_back_path().encode('utf_8')
@@ -991,7 +977,7 @@ async def BOT_handler_button_delete_confirm(event):
 
     # import random
     # random.shuffle(buttons)
-    await event.edit(_('You are about to delete:\n{}\n . Is that correct?').format(name_of_k),
+    await event.edit(_('You are about to delete:\n{}\n . Is that correct?').format(value_of_k),
                      buttons=buttons)  ## not show buttons
     return [event.message_id]
 

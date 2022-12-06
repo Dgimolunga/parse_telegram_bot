@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-26 19:02+0300\n"
+"POT-Creation-Date: 2022-12-06 12:57+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,118 +17,394 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ..\handlers_BOTS.py:136
-msgid "Enter your password:"
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:159
+msgid "Logging name is already in use."
 msgstr ""
 
-#: ..\handlers_BOTS.py:139
-msgid "Logging name is already in use, try again. Enter new user logging name:"
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:161
+msgid "Logging name is incorrect, try again."
 msgstr ""
 
-#: ..\handlers_BOTS.py:148
-msgid "Confirm your password:"
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:206
+msgid "Delete this"
 msgstr ""
 
-#: ..\handlers_BOTS.py:159
-msgid "User was created"
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:218
+msgid "Add new"
 msgstr ""
 
-#: ..\handlers_BOTS.py:162
-msgid "Different password. Try again. Enter your password:"
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:237
+msgid "Edit this"
 msgstr ""
 
-#: ..\handlers_BOTS.py:246 ..\handlers_BOTS.py:352
-msgid "Menu of user "
-msgstr ""
-
-#: ..\handlers_BOTS.py:247 ..\handlers_BOTS.py:353
-msgid "Tickers of "
-msgstr ""
-
-#: ..\handlers_BOTS.py:248 ..\handlers_BOTS.py:252
-msgid "Tag"
-msgstr ""
-
-#: ..\handlers_BOTS.py:251
-msgid "Ticker"
-msgstr ""
-
-#: ..\handlers_BOTS.py:258
-msgid "Nothing Title of Buttons Table"
-msgstr ""
-
-#: ..\handlers_BOTS.py:268
-msgid "Error, data not found or not rights for that"
-msgstr ""
-
-#: ..\handlers_BOTS.py:281
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:250
 msgid "« Back to"
 msgstr ""
 
-#: ..\handlers_BOTS.py:354
-msgid "Ticker "
-msgstr ""
-
-#: ..\handlers_BOTS.py:491
-msgid "Start!"
-msgstr ""
-
-#: ..\handlers_BOTS.py:498
-msgid "Echo mod active"
-msgstr ""
-
-#: ..\handlers_BOTS.py:546
-msgid "🧑‍💻 Create new user"
-msgstr ""
-
-#: ..\handlers_BOTS.py:548 ..\handlers_BOTS.py:550
-msgid "Choose a username from the list below:"
-msgstr ""
-
-#: ..\handlers_BOTS.py:558
-msgid "Enter new user logging name:"
-msgstr ""
-
-#: ..\handlers_BOTS.py:566
-msgid "« Back to Users List"
-msgstr ""
-
-#: ..\handlers_BOTS.py:567
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:262
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:740
 msgid "Tickers"
 msgstr ""
 
-#: ..\handlers_BOTS.py:568
-msgid "Parse Channels"
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:274
+msgid "ParseChannels"
 msgstr ""
 
-#: ..\handlers_BOTS.py:569
-msgid "Share Channels"
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:286
+msgid "ShareChannels"
 msgstr ""
 
-#: ..\handlers_BOTS.py:570
-msgid "User Setting"
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:298
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1008
+msgid "Settings"
 msgstr ""
 
-#: ..\handlers_BOTS.py:572
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:304
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:744
+msgid "Change user"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:310
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1004
+msgid "Log out user"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:316
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1005
+msgid "Delete user"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:322
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1006
+msgid "Change language"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:340
+msgid "✅ (click to disable)"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:342
+msgid "❌ (click to enable)"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:350
+msgid "Nothing Title of Buttons Table"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:358
+msgid "Error, data not found or not rights for that"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:419
+msgid " Tag is {}"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:422
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:436
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:438
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:450
+msgid " Ticker"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:423
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:424
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:435
+msgid " Tag"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:431
+msgid " Tags of {}"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:434
+msgid " Tickers"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:437
+msgid " Ticker name"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:446
+msgid " Takers of {}"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:449
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:451
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:474
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:476
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:499
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:501
+msgid " User"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:459
+msgid " Parse channel is {}"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:462
+msgid " Parse channels of user"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:463
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:464
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:475
+msgid " Parse channel"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:471
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:496
+msgid " Parse channels of user: {}"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:484
+msgid " Share channel is {}"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:487
+msgid " Share channels of user"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:488
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:489
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:500
+msgid " Share channel"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:509
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:518
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:738
 msgid ""
 "Here it is {}! \n"
 " What do you want to do?"
 msgstr ""
 
-#: ..\handlers_BOTS.py:581 ..\handlers_BOTS.py:600
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:534
+msgid "settings"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:551
+msgid "Start!"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:561
+msgid "Echo mod active"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:575
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:591
+msgid "🧑‍💻 Create new user"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:576
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:592
+msgid "🧑‍💻 Add user to me"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:577
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:593
+msgid "Choose a username from the list below:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:608
+msgid " Enter new user logging name:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:612
+msgid " Enter your password:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:626
+msgid "Confirm your password:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:641
+msgid "Different password. Try again. Enter your password:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:655
+msgid "User {} WAS CREATED 🎉🎉🎉🎉"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:667
+msgid "Enter new user logging name:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:680
+msgid "User logging incorrect, not posyble. Try again:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:684
+msgid "No that user. Try again,"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:689
+msgid "Good. Enter password:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:704
+msgid ""
+"Not that password or logging name. Try again. Enter logging name of user:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:718
+msgid "User {} HAS BEEN ADDED 🎉🎉🎉🎉"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:729
+msgid "Enter logging name of user:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:741
+msgid "Parse Channels"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:742
+msgid "Share Channels"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:743
+msgid "User Settings"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:778
 msgid "« Back to User"
 msgstr ""
 
-#: ..\handlers_BOTS.py:582 ..\handlers_BOTS.py:601
-msgid "Add New Tickers"
-msgstr ""
-
-#: ..\handlers_BOTS.py:583 ..\handlers_BOTS.py:602
-msgid "Delete Tickers"
-msgstr ""
-
-#: ..\handlers_BOTS.py:588
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:839
 msgid ""
-"It is tickers of {} ! \n"
-" What do you want to do?"
+"False input, try again. Input new {}. Please use this format, max size of "
+"one 55:\n"
+"Example1\n"
+"example2😃\n"
+"😃exaMple3"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:843
+msgid "Yes, add"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:844
+msgid "No"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:846
+msgid ""
+"Do you want add to {}:\n"
+"{}\n"
+"{}\n"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:857
+msgid ""
+"Press yes/no for confirm. Or enter /cancel for ....(help for translate) "
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:880
+msgid "Error add. Try again"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:882
+msgid ""
+"Great. To {}: \n"
+"{}\n"
+" add {}:\n"
+" {}"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:901
+msgid ""
+"Input new {} to {}:\n"
+"{}\n"
+" Please use this format, max size of one 55:\n"
+"Example1\n"
+"example2😃\n"
+"😃exaMple3"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:918
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:993
+msgid "Yes, logout from"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:919
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:933
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:975
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:994
+msgid "No, i misclicked"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:920
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:934
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:995
+msgid " « Back to setting"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:922
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:935
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:996
+msgid "You are about to logout from {}. Is that correct?"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:932
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:974
+msgid "Yes, i am sure 100%"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:945
+msgid " « Back to my users"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:946
+msgid "You logout from {}."
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:965
+msgid ""
+"Was deleted {}: \n"
+"{}\n"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:967
+msgid "Dont DELETED. TRY AGAIN ‼️"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:972
+msgid "Yes, delete it"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:976
+msgid " « Back"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:980
+msgid ""
+"You are about to delete:\n"
+"{}\n"
+" . Is that correct?"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1007
+msgid "« Back to user manager"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1023
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1040
+msgid "{}"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1025
+msgid "« Go to user manager"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1027
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1041
+msgid "Choose language:"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1049
+msgid "WrongCallbackQuery, {}"
+msgstr ""
+
+#: ..\handlers\handlers_of_bot\handlers_BOTS.py:1058
+msgid "Sorry, I am not allowed to talk to you"
 msgstr ""

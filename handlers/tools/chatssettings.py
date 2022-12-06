@@ -132,23 +132,13 @@ class ChatSelectedUser(UserId):
 
 
 class Path(UserId):
-    class Key:
-
-        def __init__(self, key):
-            self.path_key = key
-            self.data = ''
-            self.name_of_k = ''
-            # ex key: 'add_'
-
-        def get_sub_path(self):
-            return self.path_key
 
     class KeyData:
 
-        def __init__(self, key, data='', name=''):
+        def __init__(self, key, data='', value=''):
             self.path_key = key
             self.data = data
-            self.name_of_k = name
+            self.value_of_k = value
 
         def get_sub_path(self):
             return '_'.join([self.path_key, self.data])
@@ -159,7 +149,7 @@ class Path(UserId):
                 return self.path_key == other.path_key
             return False
 
-    FIRST_PATH = [Key('myusers')]
+    FIRST_PATH = [KeyData('myusers')]
 
     def __init__(self, event):
         super().__init__(event)
@@ -172,11 +162,11 @@ class Path(UserId):
             raise Exception('key not in command or nested, need add')
         if _k in command:
             sub_path = Path.KeyData(_k)
-            # name_of_k = self.get_name_of_key(_k, _k_data)
+        # value = self.get_value_of_key(_k, _k_data)
         else:
             _k_data = full_data.split('_', maxsplit=2)[1]
-            name_of_k = self.get_name_of_key(_k, _k_data)
-            sub_path = Path.KeyData(_k, data=_k_data, name=name_of_k)
+            value_of_k = self.get_value_of_key(_k, _k_data)
+            sub_path = Path.KeyData(_k, data=_k_data, value=value_of_k)
 
         if sub_path in self.path:
             self.path = self.path[:self.path.index(sub_path) + 1]
@@ -188,7 +178,7 @@ class Path(UserId):
         self.saved_path = self.path
 
     @staticmethod
-    def get_name_of_key(_k, _k_data):
+    def get_value_of_key(_k, _k_data):
         res_db = db_get_1(_k, _k_data)
         if not res_db:
             raise ExceptionNotFindInDB('not key_data`s name in db')
@@ -196,9 +186,9 @@ class Path(UserId):
 
     def get_var_of_last_path(self, from_saved=False):
         if not from_saved:
-            return [self.path[-1].path_key, self.path[-1].data, self.path[-1].name_of_k]
+            return [self.path[-1].path_key, self.path[-1].data, self.path[-1].value_of_k]
         else:
-            return [self.saved_path[-1].path_key, self.saved_path[-1].data, self.saved_path[-1].name_of_k]
+            return [self.saved_path[-1].path_key, self.saved_path[-1].data, self.saved_path[-1].value_of_k]
 
     def get_back_path(self, from_saved=False):
         if not from_saved:

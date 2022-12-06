@@ -31,14 +31,6 @@ class MyTelethonClient(telethon.TelegramClient):
             self.add_event_handler(cfg_d.handlers_BOT_dict[bot_type][handler])
 
 
-# @telethon.events.register(telethon.events.NewMessage)
-# async def event_handler_ms(event):
-#     client_event = event.client
-#     if event.message and event.message.sender_id != -1001557150106:
-#         print(client_event)
-#         await client_event.send_message(cfg.my_channel_id, message="!!!!!!!!!!!!!!!!!!NewMessage!!!!!!!!!!!!!!!")
-
-
 # loop = asyncio.new_event_loop()
 # asyncio.set_event_loop(loop)
 class SingleTonePattern:
