@@ -209,7 +209,7 @@ class DeleteButton(ButtonOfTabale):
     def create_button(self):
         btf = self.buttons_table.buttons_table_info
         data = self.buttons_table.event_of_callback_query.data.decode()
-        self.button.button_msg += btf.delete_msg
+        self.button.button_msg += self.buttons_table._(btf.delete_msg)
         return self.button.get_button()
 
 
@@ -221,9 +221,9 @@ class AddNewButton(ButtonOfTabale):
     def create_button(self):
         btf = self.buttons_table.buttons_table_info
         data = self.buttons_table.event_of_callback_query.data.decode()
-        self.button.button_msg += btf.add_msg
+        self.button.button_msg += self.buttons_table._(btf.add_msg)
         spl = data.split('_', maxsplit=2)
-        self.button.button_data += f'{spl[0]}_{spl[1]}_{data}'
+        # self.button.button_data += f'{spl[0]}_{spl[1]}_{data}'     may be is not use (key is 'add_', data in path)
         return self.button.get_button()
 
 
@@ -240,7 +240,7 @@ class EditButton(ButtonOfTabale):
     def create_button(self):
         btf = self.buttons_table.buttons_table_info
         data = self.buttons_table.event_of_callback_query.data.decode()
-        self.button.button_msg += btf.edit_msg
+        self.button.button_msg += self.buttons_table._(btf.edit_msg)
         self.button.button_data += data
         return self.button.get_button()
 
@@ -252,7 +252,7 @@ class BackButton(ButtonOfTabale):
 
     def create_button(self):
         btf = self.buttons_table.buttons_table_info
-        self.button.button_msg += btf.back_msg
+        self.button.button_msg += self.buttons_table._(btf.back_msg)
         self.button.button_data = CI[self.buttons_table.event_of_callback_query].get_back_path()  # get second path
         return self.button.get_button()
 
@@ -307,7 +307,7 @@ class MyUsersButton(ButtonOfTabale):
 
 class LogOutUserButton(ButtonOfTabale):
     def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Log out user'), 'conflogout')
+        self.button = MButton(buttons_table._('Log out user'), 'conflogout_')
         self.buttons_table = buttons_table
 
 
@@ -365,7 +365,7 @@ class ButtonsTable:
 
     async def display_buttons(self, send_msg=False):
         if self.error_msg is not None:
-            message = await self.event_of_callback_query.answer(self.error_msg, alert=True)
+            message = await self.event_of_callback_query.respond(self.error_msg)
             return []
         if send_msg:
             message = await self.event_of_callback_query.respond(f'{self.title_msg_}', buttons=self.buttons_list)
@@ -386,7 +386,7 @@ class ButtonsTableOfDataFromDatabase(ButtonsTable):
             if callable(getattr(self.buttons_table_info, 'do_smth', None)):
                 getattr(self.buttons_table_info, 'do_smth')(event)
         except ExceptionNotFindInDB as ex:
-            self.error_msg = ex
+            self.error_msg = str(ex)
             return
 
         user_logging = CI[event].selected_user
@@ -532,8 +532,9 @@ class UserButtonsButtons(TypeButtonsABC):
 class SettingsButtonsTable(TypeButtonsABC):
     key = 'settings'
     title_msg_ = _('settings')
+    back_msg = _(' User')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (LogOutUserButton, DeleteUserButton, LanguageButton, MyUsersButton,)
+    available_control_buttons = (BackButton, LogOutUserButton, DeleteUserButton, LanguageButton, MyUsersButton,)
     get_all = False
     enable = False
 
@@ -843,7 +844,7 @@ async def BOT_handler_add_confirm(fun, args, kwargs):
     buttons = [[Button.inline(_('Yes, add'), f'addnextconfirmyes_')],
                [Button.inline(_('No'), f'addnextconfirmno_')]]
     message = await event.respond(
-        _('Do you want add to {}:\n{}\n{}\n').format(dict_for_type_buttons_by_key[_k].add_msg,
+        _('Do you want add to {}:\n{}\n{}\n').format(_(dict_for_type_buttons_by_key[_k].add_msg),
                                                      value_of_k,
                                                      '\n'.join(confirm_list_of_add)),
         buttons=buttons)
@@ -880,9 +881,9 @@ async def BOT_handler_add_finish(fun, args, kwarg):
             await event.respond(_('Error add. Try again'))
         else:
             await event.respond(_('Great. To {}: \n{}\n add {}:\n {}').format(
-                dict_for_type_buttons_by_key[_k].add_to_msg,
+                _(dict_for_type_buttons_by_key[_k].add_to_msg),
                 value_of_k,
-                dict_for_type_buttons_by_key[_k].add_msg,
+                _(dict_for_type_buttons_by_key[_k].add_msg),
                 '\n'.join(add_data_list)))
     event.query.data = CI[event].get_last_path(from_saved=True).encode(encoding='utf-8')
     message_id = await BOT_handler_callback_buttons_table(event, send_msg=True)
@@ -899,8 +900,8 @@ async def BOT_handler_button_add(event):
     message = await event.respond(
         _(
             'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3').format(
-            dict_for_type_buttons_by_key[_k].add_msg,
-            dict_for_type_buttons_by_key[_k].add_to_msg,
+            _(dict_for_type_buttons_by_key[_k].add_msg),
+            _(dict_for_type_buttons_by_key[_k].add_to_msg),
             value_of_k
         )
     )
@@ -919,8 +920,9 @@ async def BOT_handler_button_log_out_user_confirm(event):
                [Button.inline(_('No, i misclicked'), 'settings_')],
                [Button.inline(_(' « Back to setting'), 'settings_')]]
     import random
+    random.shuffle(buttons)
     await event.edit(_('You are about to logout from {}. Is that correct?').format(logging_user_name),
-                     buttons=random.shuffle(buttons))  ## not show buttons
+                     buttons=buttons)
     return [event.message_id]
 
 
@@ -943,8 +945,10 @@ async def BOT_handler_button_log_out_user(event):
     logging_user_name = CI[event].selected_user
     CI[event].logout()
     buttons = [[Button.inline(_(' « Back to my users'), 'myusers_')]]
-    await event.edit(_('You logout from {}.').format(logging_user_name), buttons=buttons)
-    return [event.message_id]
+    await event.client.delete_messages(event.chat_id, [event.message_id])
+    await event.respond(_('YOU LOGOUT FROM {}.🛑🚪🚪🚪🚪🚪🚪🚪🛑').format(logging_user_name))
+    message = await event.respond(_('You logout from {}.').format(logging_user_name), buttons=buttons)
+    return [message.id]
 
 
 # _________________________________________________________________________________________________________________________________________________________________________
@@ -962,7 +966,8 @@ async def BOT_handler_button_delete_confirm(event):
         await event.client.delete_messages(event.chat_id, [event.message_id])
         if res_db:
             await event.respond(
-                _('Was deleted {}: \n{}\n').format(dict_for_type_buttons_by_key[_k].delete_msg, value_of_k))
+                _('Was deleted {}: \n{}\n').format(_(dict_for_type_buttons_by_key[_k].delete_msg),
+                                                   value_of_k))
         else:
             await event.respond(_('Dont DELETED. TRY AGAIN ‼️'))
         event.query.data = CI[event].get_back_path().encode('utf_8')
@@ -997,16 +1002,16 @@ async def BOT_handler_button_deleteuser_confirm(event):
     return [event.message_id]
 
 
-@events.register(events.CallbackQuery(pattern='settings_'))
-@fsm_decor(st.ActionCallBack())
-async def BOT_handler_button_settings(event):
-    _ = CI[event]._
-    buttons = [[Button.inline(_('Log out user'), 'conflogout_')],
-               [Button.inline(_('Delete user'), 'deluser_')],
-               [Button.inline(_('Change language'), 'language_')],
-               [Button.inline(_('« Back to user manager'), 'user_')]]
-    await event.edit(_('Settings'), buttons=buttons)
-    return [event.message_id]
+# @events.register(events.CallbackQuery(pattern='settings_'))
+# @fsm_decor(st.ActionCallBack())
+# async def BOT_handler_button_settings(event):
+#     _ = CI[event]._
+#     buttons = [[Button.inline(_('Log out user'), 'conflogout_')],
+#                [Button.inline(_('Delete user'), 'deluser_')],
+#                [Button.inline(_('Change language'), 'language_')],
+#                [Button.inline(_('« Back to user manager'), 'user_')]]
+#     await event.edit(_('Settings'), buttons=buttons)
+#     return [event.message_id]
 
 
 @events.register(events.CallbackQuery(pattern='language_|languagecommand_'))

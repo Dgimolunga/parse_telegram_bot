@@ -3,7 +3,7 @@ from logger import logger as my_logger
 from localization import localization
 
 from Database.database import db_set_to_chatssettings, db_get_from_chatssettings, db_del, db_get, \
-    db_update_selected_user, db_get_1
+    db_update_selected_user, db_get_1, db_set_none_to_selected_user
 from handlers.tools import states as St
 
 # ____________________________________________________________
@@ -127,8 +127,9 @@ class ChatSelectedUser(UserId):
 
     def logout(self):
         logout_user = self.selected_user
-        self.selected_user = ''
+        db_set_none_to_selected_user(self.chat_id)
         db_del('TelegramIdHaveUsers', telegram_id=self.chat_id, key_user=logout_user)
+        self.selected_user = None
 
 
 class Path(UserId):

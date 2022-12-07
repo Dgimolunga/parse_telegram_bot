@@ -470,6 +470,15 @@ def db_get_from_chatssettings(chat_id, state=False, language=False):
     return None
 
 
+def db_set_none_to_selected_user(chat_id):
+    chat_settings = session_db.query(ChatsSettings).filter_by(chat_id=chat_id).first()
+    if not chat_settings:
+        return
+    chat_settings.selected_user = None
+    session_db.add(chat_settings)
+    session_db.commit()
+
+
 def db_set_to_chatssettings(chat_id, state=False, language=False):
     settings = session_db.query(ChatsSettings).filter_by(chat_id=chat_id).first()
     if not settings:
@@ -522,7 +531,6 @@ dict_for_add = {
     }
 }
 
-
 dict_for_get_name = {
 
     'user': {
@@ -566,7 +574,6 @@ dict_for_get_name = {
         'get_res': 'key_user'
     },
 }
-
 
 dict_for_del = {
 
