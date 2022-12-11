@@ -10,7 +10,7 @@ import config_for_bot as cfg
 from data_value import telegram_parse
 from handlers.tools.chatssettings import CI, ExceptionUserNotSelectedSendAllUsers, ExceptionNotFindInDB
 from handlers.tools import states as st
-from abc import ABC, abstractclassmethod
+from abc import abstractmethod, ABC
 import asyncio
 import telethon.events
 # ______________________________________________________________________________________________________________________
@@ -196,35 +196,65 @@ class MButton:
         return Button.inline(self.button_msg, self.button_data)
 
 
-class ButtonOfTabale:
-    def create_button(self):
-        return self.button.get_button()
+class ButtonOfTabale(ABC):
+    @abstractmethod
+    def create_button(buttons_table):
+        pass
 
 
-class DeleteButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Delete this'), 'confirmdelete_')
-        self.buttons_table = buttons_table
+class DeleteButton(ButtonOfTabale, ABC):
 
-    def create_button(self):
-        btf = self.buttons_table.buttons_table_info
-        data = self.buttons_table.event_of_callback_query.data.decode()
-        self.button.button_msg += self.buttons_table._(btf.delete_msg)
-        return self.button.get_button()
+    @staticmethod
+    def create_button(buttons_table):
+        button = MButton(buttons_table._('Delete this'), 'confirmdelete_')
+        buttons_table = buttons_table
+        btf = buttons_table.buttons_table_info
+        button.button_msg += buttons_table._(btf.delete_msg)
+        return [[button.get_button()]]
+
+    @abstractmethod
+    def delete_msg(self):
+        pass
 
 
-class AddNewButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Add new'), 'add_')
-        self.buttons_table = buttons_table
+class AddNewButton(ButtonOfTabale, ABC):
+    # def __init__(self, buttons_table):
+    #     self.button = MButton(buttons_table._('Add new'), 'add_')
+    #     self.buttons_table = buttons_table
 
-    def create_button(self):
-        btf = self.buttons_table.buttons_table_info
-        data = self.buttons_table.event_of_callback_query.data.decode()
-        self.button.button_msg += self.buttons_table._(btf.add_msg)
-        spl = data.split('_', maxsplit=2)
+    @staticmethod
+    def create_button(buttons_table):
+        button = MButton(buttons_table._('Add new'), 'add_')
+        btf = buttons_table.buttons_table_info
+        button.button_msg += buttons_table._(btf.add_msg)
+        # data = self.buttons_table.event_of_callback_query.data.decode()
+        # spl = data.split('_', maxsplit=2)
         # self.button.button_data += f'{spl[0]}_{spl[1]}_{data}'     may be is not use (key is 'add_', data in path)
-        return self.button.get_button()
+        return [[button.get_button()]]
+
+    @abstractmethod
+    def add_msg(self):
+        pass
+
+    @abstractmethod
+    def fist_state_of_conversation():
+        pass
+
+    @abstractmethod
+    def add_to_msg(self):
+        pass
+
+    @staticmethod
+    async def base_add_state_of_conversation(event, _k, _k_data, value_of_k):
+        message = await event.respond(
+            _(
+                'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3').format(
+                _(dict_for_type_buttons_by_key[_k].add_msg),
+                _(dict_for_type_buttons_by_key[_k].add_to_msg),
+                value_of_k
+            )
+        )
+        return message
 
 
 class SwitchEnableButton:
@@ -232,130 +262,139 @@ class SwitchEnableButton:
         pass
 
 
-class EditButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Edit this'), 'edit_')
-        self.buttons_table = buttons_table
+class EditButton(ButtonOfTabale, ABC):
 
-    def create_button(self):
-        btf = self.buttons_table.buttons_table_info
-        data = self.buttons_table.event_of_callback_query.data.decode()
-        self.button.button_msg += self.buttons_table._(btf.edit_msg)
-        self.button.button_data += data
-        return self.button.get_button()
+    @staticmethod
+    def create_button(buttons_table):
+        button = MButton(buttons_table._('Edit this'), 'edit_')
+        btf = buttons_table.buttons_table_info
+        button.button_msg += buttons_table._(btf.edit_msg)
+        return [[button.get_button()]]
 
-
-class BackButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('« Back to'))
-        self.buttons_table = buttons_table
-
-    def create_button(self):
-        btf = self.buttons_table.buttons_table_info
-        self.button.button_msg += self.buttons_table._(btf.back_msg)
-        self.button.button_data = CI[self.buttons_table.event_of_callback_query].get_back_path()  # get second path
-        return self.button.get_button()
+    @abstractmethod
+    def edit_msg(self):
+        pass
 
 
-class TickersButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Tickers'), 'tickers_')
-        self.buttons_table = buttons_table
+class BackButton(ButtonOfTabale, ABC):
 
-    def create_button(self):
-        btf = self.buttons_table.buttons_table_info
-        event = self.buttons_table.event_of_callback_query
-        self.button.button_data += CI[event].selected_user
-        return self.button.get_button()
+    @staticmethod
+    def create_button(buttons_table):
+        button = MButton(buttons_table._('« Back to'))
+        btf = buttons_table.buttons_table_info
+        button.button_msg += buttons_table._(btf.back_msg)
+        button.button_data = CI[buttons_table.event_of_callback_query].get_back_path()  # get second path
+        return [[button.get_button()]]
 
-
-class ParseChannelsButton:
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('ParseChannels'), 'pchs_')
-        self.buttons_table = buttons_table
-
-    def create_button(self):
-        btf = self.buttons_table.buttons_table_info
-        event = self.buttons_table.event_of_callback_query
-        self.button.button_data += CI[event].selected_user
-        return self.button.get_button()
+    @abstractmethod
+    def back_msg(self):
+        pass
 
 
-class ShareChannelsButton:
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('ShareChannels'), 'shchs_')
-        self.buttons_table = buttons_table
+class TickersButton(ButtonOfTabale, ABC):
 
-    def create_button(self):
-        btf = self.buttons_table.buttons_table_info
-        event = self.buttons_table.event_of_callback_query
-        self.button.button_data += CI[event].selected_user
-        return self.button.get_button()
+    @staticmethod
+    def create_button(buttons_table):
+        button = MButton(buttons_table._('Tickers'), 'tickers_')
+        event = buttons_table.event_of_callback_query
+        button.button_data += CI[event].selected_user
+        return [[button.get_button()]]
 
 
-class SettingsButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Settings'), 'settings_')
-        self.buttons_table = buttons_table
+class ParseChannelsButton(ButtonOfTabale, ABC):
+
+    @staticmethod
+    def create_button(buttons_table):
+        button = MButton(buttons_table._('ParseChannels'), 'pchs_')
+        event = buttons_table.event_of_callback_query
+        button.button_data += CI[event].selected_user
+        return [[button.get_button()]]
 
 
-class MyUsersButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Change user'), 'myusers_')
-        self.buttons_table = buttons_table
+class ShareChannelsButton(ButtonOfTabale, ABC):
+
+    @staticmethod
+    def create_button(buttons_table):
+        button = MButton(buttons_table._('ShareChannels'), 'shchs_')
+        event = buttons_table.event_of_callback_query
+        button.button_data += CI[event].selected_user
+        return [[button.get_button()]]
 
 
-class LogOutUserButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Log out user'), 'conflogout_')
-        self.buttons_table = buttons_table
+class SettingsButton(ButtonOfTabale, ABC):
+
+    @staticmethod
+    def create_button(buttons_table):
+        return [[MButton(buttons_table._('Settings'), 'settings_').get_button()]]
 
 
-class DeleteUserButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Delete user'), 'deluser')
-        self.buttons_table = buttons_table
+class MyUsersButton(ButtonOfTabale, ABC):
+    @staticmethod
+    def create_button(buttons_table):
+        return [[MButton(buttons_table._('Change user'), 'myusers_').get_button()]]
+
+
+class LogOutUserButton(ButtonOfTabale, ABC):
+    @staticmethod
+    def create_button(buttons_table):
+        return [[MButton(buttons_table._('Log out user'), 'conflogout_').get_button()]]
+
+
+class DeleteUserButton(ButtonOfTabale, ABC):
+    @staticmethod
+    def create_button(buttons_table):
+        return [[MButton(buttons_table._('Delete user'), 'deluser').get_button()]]
 
 
 class LanguageButton(ButtonOfTabale):
-    def __init__(self, buttons_table):
-        self.button = MButton(buttons_table._('Change language'), 'language_')
-        self.buttons_table = buttons_table
+    @staticmethod
+    def create_button(buttons_table):
+        return [[MButton(buttons_table._('Change language'), 'language_').get_button()]]
 
 
-class GetAllButtons(ButtonOfTabale):
+class GetAllButton(ButtonOfTabale, ABC):
 
-    def __init__(self, buttons_table: ButtonsTableOfDataFromDatabase, enable_switch=False):
-        self.buttons = []
+    @staticmethod
+    def create_button(buttons_table):
+        buttons = []
         btf = buttons_table.buttons_table_info
         _k, _k_data, value_of_k = CI[buttons_table.event_of_callback_query].get_var_of_last_path()
 
         get_all_list = db_get_all_smth(_k, _k_data)
         if not get_all_list:
-            return
+            return []
         for value, key_and_enable in get_all_list.items():
             buttons_ = [Button.inline(f'{value}', f'{btf.key_sub}_{key_and_enable[0]}_')]
-            if enable_switch:
+            if btf.enable_switch:
                 if key_and_enable[1]:
-                    buttons_.append(Button.inline(buttons_table._('✅ (click to disable)'), f'switch_{_k}_{key_and_enable[0]}'))
+                    buttons_.append(
+                        Button.inline(buttons_table._('✅ (click to disable)'), f'switch_{_k}_{key_and_enable[0]}'))
                 if not key_and_enable[1]:
-                    buttons_.append(Button.inline(buttons_table._('❌ (click to enable)'), f'switch_{_k}_{key_and_enable[0]}'))
-            self.buttons.append(buttons_)
+                    buttons_.append(
+                        Button.inline(buttons_table._('❌ (click to enable)'), f'switch_{_k}_{key_and_enable[0]}'))
+            buttons.append(buttons_)
+        return buttons
 
-    def create_button(self):
-        return self.buttons
+    @abstractmethod
+    def key_sub(self):
+        pass
+
+    @abstractmethod
+    def enable_switch(self):
+        pass
+
 
 
 class ButtonsTable:
-    title_msg_ = _('Nothing Title of Buttons Table')
+    title_msg_t = _('Nothing Title of Buttons Table')
     error_msg = None
 
-    def __init__(self, event, type_buttons_of_key: TypeButtonsABC):
+    def __init__(self, event, type_buttons_of_key: ButtonsTableInfoABC):
         self.event_of_callback_query = event
         self.buttons_table_info = type_buttons_of_key
 
     def __create_error_buttons_(self, error):
-        self.title_msg_ = _('Error, data not found or not rights for that')
+        self.title_msg_t = _('Error, data not found or not rights for that')
         ## button
 
     async def reaction_on_click(self, send_msg=False, function_of_react=None, *args, **kwargs):
@@ -368,9 +407,9 @@ class ButtonsTable:
             message = await self.event_of_callback_query.respond(self.error_msg)
             return []
         if send_msg:
-            message = await self.event_of_callback_query.respond(f'{self.title_msg_}', buttons=self.buttons_list)
+            message = await self.event_of_callback_query.respond(f'{self.title_msg_t}', buttons=self.buttons_list)
         else:
-            message = await self.event_of_callback_query.edit(f'{self.title_msg_}', buttons=self.buttons_list)
+            message = await self.event_of_callback_query.edit(f'{self.title_msg_t}', buttons=self.buttons_list)
         return [message.id]
 
 
@@ -390,14 +429,16 @@ class ButtonsTableOfDataFromDatabase(ButtonsTable):
             return
 
         user_logging = CI[event].selected_user
-        self.title_msg_ = self.get_title()
+        self.title_msg_t = self.get_title()
         self.buttons_list = []
-        for mbutton in self.buttons_table_info.available_control_buttons: # ту на до будет поменять
-            self.buttons_list.append([mbutton(self).create_button()])
-        # get all from db
-        if getattr(self.buttons_table_info, 'get_all', False):
-            buttons_ = GetAllButtons(self, enable_switch=self.buttons_table_info.enable_switch).create_button()
-            self.buttons_list.extend(buttons_)
+        for mbutton in self.buttons_table_info.__class__.__bases__[1:]:
+            self.buttons_list.extend(mbutton.create_button(self))
+        # for mbutton in self.buttons_table_info.available_control_buttons: # ту на до будет поменять
+        #     self.buttons_list.append([mbutton(self).create_button()])
+        # # get all from db
+        # if getattr(self.buttons_table_info, 'get_all', False):
+        #     buttons_ = GetAllButtons(self, enable_switch=self.buttons_table_info.enable_switch).create_button()
+        #     self.buttons_list.extend(buttons_)
 
     def get_title(self) -> str:
 
@@ -406,120 +447,124 @@ class ButtonsTableOfDataFromDatabase(ButtonsTable):
         return self._(self.buttons_table_info.title_msg_).format(CI[self.event_of_callback_query].path[-1].value_of_k)
 
 
-class TypeButtonsABC(ABC):
-    available_control_buttons = None
-    get_all = None
-    key = None
-    enable_switch = None
-    pass
+class ButtonsTableInfoABC(ABC):
+    @abstractmethod
+    def key(self):
+        pass
+
+    @abstractmethod
+    def title_msg_(self):
+        pass
+
+    @abstractmethod
+    def buttons_table(self):
+        pass
+    # available_control_buttons = None
+    # get_all = None
+    # key = None
+    # enable_switch = None
 
 
-class TagButtonsTable(TypeButtonsABC):
+class TagButtonsTable(ButtonsTableInfoABC, BackButton, EditButton, DeleteButton):
     key = 'tag'
     title_msg_ = _(' Tag is {}')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (BackButton, EditButton, DeleteButton)
+    # available_control_buttons = (BackButton, EditButton, DeleteButton)
     back_msg = _(' Ticker')
     edit_msg = _(' Tag')
     delete_msg = _(' Tag')
-    get_all = False
-    enable_switch = False
 
 
-class TagsButtonsTable(TypeButtonsABC):
+class TagsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton, EditButton, DeleteButton, GetAllButton):
     key = 'tags'
     title_msg_ = _(' Tags of {}')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (BackButton, AddNewButton, EditButton, DeleteButton)
+    # available_control_buttons = (BackButton, AddNewButton, EditButton, DeleteButton)
     back_msg = _(' Tickers')
     add_msg = _(' Tag')
     add_to_msg = _(' Ticker')
+    fist_state_of_conversation = AddNewButton.base_add_state_of_conversation
     edit_msg = _(' Ticker name')
     delete_msg = _(' Ticker')
     key_sub = 'tag'
-    get_all = True
     enable_switch = True
 
 
-class TickersButtonsTable(TypeButtonsABC):
+class TickersButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton, GetAllButton):
     key = 'tickers'
     title_msg_ = _(' Takers of {}')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (BackButton, AddNewButton)
+    # available_control_buttons = (BackButton, AddNewButton)
     back_msg = _(' User')
     add_msg = _(' Ticker')
     add_to_msg = _(' User')
+    fist_state_of_conversation = AddNewButton.base_add_state_of_conversation
     key_sub = 'tags'
-    get_all = True
     enable_switch = True
 
 
-class ParseChannelButtonsTable(TypeButtonsABC):
+class ParseChannelButtonsTable(ButtonsTableInfoABC, BackButton, EditButton, DeleteButton):
     key = 'pch'
     title_msg_ = _(' Parse channel is {}')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (BackButton, EditButton, DeleteButton)
+    # available_control_buttons = (BackButton, EditButton, DeleteButton)
     back_msg = _(' Parse channels of user')
     edit_msg = _(' Parse channel')
     delete_msg = _(' Parse channel')
-    get_all = False
-    enable_switch = False
 
 
-class ParseChannelsButtonsTable(TypeButtonsABC):
+class ParseChannelsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton):
     key = 'pchs'
     title_msg_ = _(' Parse channels of user: {}')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (BackButton, AddNewButton)
+    # available_control_buttons = (BackButton, AddNewButton)
     back_msg = _(' User')
+
     add_msg = _(' Parse channel')
     add_to_msg = _(' User')
+    fist_state_of_conversation = AddNewButton.base_add_state_of_conversation
+
     key_sub = 'parsechannel'
-    get_all = True
     enable_switch = True
 
 
-class ShareChannelBattonsTable(TypeButtonsABC):
+class ShareChannelBattonsTable(ButtonsTableInfoABC, BackButton, EditButton, DeleteButton):
     key = 'shch'
     title_msg_ = _(' Share channel is {}')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (BackButton, EditButton, DeleteButton)
+    # available_control_buttons = (BackButton, EditButton, DeleteButton)
     back_msg = _(' Share channels of user')
     edit_msg = _(' Share channel')
     delete_msg = _(' Share channel')
-    get_all = False
-    enable_switch = False
 
 
-class ShareChannelsButtonsTable(TypeButtonsABC):
+class ShareChannelsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton):
     key = 'shchs'
     title_msg_ = _(' Parse channels of user: {}')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (BackButton, AddNewButton)
+    # available_control_buttons = (BackButton, AddNewButton)
     back_msg = _(' User')
     add_msg = _(' Share channel')
     add_to_msg = _(' User')
+    fist_state_of_conversation = AddNewButton.base_add_state_of_conversation
+
     key_sub = 'sharechannel'
-    get_all = True
     enable_switch = True
 
 
-class UserManagerButtonsTable(TypeButtonsABC):
+class UserManagerButtonsTable(ButtonsTableInfoABC, TickersButton, ParseChannelsButton, ShareChannelsButton,
+                              SettingsButton):
     key = 'usermanager'
     title_msg_ = _('Here it is {}! \n What do you want to do?')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
-    get_all = False
-    enable_switch = False
+    # available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
 
 
-class UserButtonsButtons(TypeButtonsABC):
+class UserButtonsButtons(ButtonsTableInfoABC, TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton):
     key = 'user'
     title_msg_ = _('Here it is {}! \n What do you want to do?')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
-    get_all = False
-    enable_switch = False
+    # available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
 
     @staticmethod
     def change_user(event):
@@ -529,13 +574,11 @@ class UserButtonsButtons(TypeButtonsABC):
     do_smth = change_user
 
 
-class DelUserButtons(TypeButtonsABC):
+class DelUserButtons(ButtonsTableInfoABC):
     key = 'deluser'
     title_msg_ = _('Here it is {}! \n What do you want to do?')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
-    get_all = False
-    enable_switch = False
+    # available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
 
     @staticmethod
     def change_user(event):
@@ -545,14 +588,13 @@ class DelUserButtons(TypeButtonsABC):
     do_smth = change_user
 
 
-class SettingsButtonsTable(TypeButtonsABC):
+class SettingsButtonsTable(ButtonsTableInfoABC, BackButton, LogOutUserButton, DeleteUserButton, MyUsersButton,
+                           LanguageButton):
     key = 'settings'
     title_msg_ = _('settings')
     back_msg = _(' User')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (BackButton, LogOutUserButton, DeleteUserButton, MyUsersButton,LanguageButton,)
-    get_all = False
-    enable_switch = False
+    # available_control_buttons = (BackButton, LogOutUserButton, DeleteUserButton, MyUsersButton,LanguageButton,)
 
 
 # _________________________________________________________________________________________________________________________________________________________________________
@@ -825,7 +867,7 @@ DBOT = events.register(
 @fsm_decor(st.ActionCallBack())
 async def BOT_handler_switch_some(event):
     _ = CI[event]._
-    __, _k, _k_data = data.decode().split('_', maxsplit=2)
+    __, _k, _k_data = event.data.decode().split('_', maxsplit=2)
     res = db_switch_some_for_user(_k, _k_data)
     if not res:
         await event.answer()
@@ -912,15 +954,7 @@ async def BOT_handler_button_add(event):
     _ = CI[event]._
     _k, _k_data, value_of_k = CI[event].get_var_of_last_path()
     CI[event].save_path_for_state()
-    dict_for_type_buttons_by_key[_k].add_fist_state_of_conversation
-    message = await event.respond(
-        _(
-            'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3').format(
-            _(dict_for_type_buttons_by_key[_k].add_msg),
-            _(dict_for_type_buttons_by_key[_k].add_to_msg),
-            value_of_k
-        )
-    )
+    message = await dict_for_type_buttons_by_key[_k].__class__.fist_state_of_conversation(event, _k, _k_data, value_of_k)
     return [message.id]
 
 
@@ -1116,8 +1150,8 @@ parse_bot_users_state_fsm = st.ParseBotUsersStateFSM()
 # _______________________________________________________
 # add buttons
 dict_for_type_buttons_by_key = {}
-for cls in globals()[TypeButtonsABC.__name__].__subclasses__():
-    dict_for_type_buttons_by_key[cls.key] = cls
+for cls in globals()[ButtonsTableInfoABC.__name__].__subclasses__():
+    dict_for_type_buttons_by_key[cls.key] = cls()
 
 
 class BuilderButtonsTable:
