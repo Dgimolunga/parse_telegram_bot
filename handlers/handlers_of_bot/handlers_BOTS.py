@@ -10,7 +10,7 @@ import config_for_bot as cfg
 from data_value import telegram_parse
 from handlers.tools.chatssettings import CI, ExceptionUserNotSelectedSendAllUsers, ExceptionNotFindInDB
 from handlers.tools import states as st
-from abc import ABC
+from abc import ABC, abstractclassmethod
 import asyncio
 import telethon.events
 # ______________________________________________________________________________________________________________________
@@ -392,11 +392,11 @@ class ButtonsTableOfDataFromDatabase(ButtonsTable):
         user_logging = CI[event].selected_user
         self.title_msg_ = self.get_title()
         self.buttons_list = []
-        for mbutton in self.buttons_table_info.available_control_buttons:
+        for mbutton in self.buttons_table_info.available_control_buttons: # ту на до будет поменять
             self.buttons_list.append([mbutton(self).create_button()])
         # get all from db
         if getattr(self.buttons_table_info, 'get_all', False):
-            buttons_ = GetAllButtons(self, enable_switch=self.buttons_table_info.enable).create_button()
+            buttons_ = GetAllButtons(self, enable_switch=self.buttons_table_info.enable_switch).create_button()
             self.buttons_list.extend(buttons_)
 
     def get_title(self) -> str:
@@ -410,7 +410,7 @@ class TypeButtonsABC(ABC):
     available_control_buttons = None
     get_all = None
     key = None
-    enable = None
+    enable_switch = None
     pass
 
 
@@ -423,7 +423,7 @@ class TagButtonsTable(TypeButtonsABC):
     edit_msg = _(' Tag')
     delete_msg = _(' Tag')
     get_all = False
-    enable = False
+    enable_switch = False
 
 
 class TagsButtonsTable(TypeButtonsABC):
@@ -438,7 +438,7 @@ class TagsButtonsTable(TypeButtonsABC):
     delete_msg = _(' Ticker')
     key_sub = 'tag'
     get_all = True
-    enable = True
+    enable_switch = True
 
 
 class TickersButtonsTable(TypeButtonsABC):
@@ -451,7 +451,7 @@ class TickersButtonsTable(TypeButtonsABC):
     add_to_msg = _(' User')
     key_sub = 'tags'
     get_all = True
-    enable = True
+    enable_switch = True
 
 
 class ParseChannelButtonsTable(TypeButtonsABC):
@@ -463,7 +463,7 @@ class ParseChannelButtonsTable(TypeButtonsABC):
     edit_msg = _(' Parse channel')
     delete_msg = _(' Parse channel')
     get_all = False
-    enable = False
+    enable_switch = False
 
 
 class ParseChannelsButtonsTable(TypeButtonsABC):
@@ -476,7 +476,7 @@ class ParseChannelsButtonsTable(TypeButtonsABC):
     add_to_msg = _(' User')
     key_sub = 'parsechannel'
     get_all = True
-    enable = True
+    enable_switch = True
 
 
 class ShareChannelBattonsTable(TypeButtonsABC):
@@ -488,7 +488,7 @@ class ShareChannelBattonsTable(TypeButtonsABC):
     edit_msg = _(' Share channel')
     delete_msg = _(' Share channel')
     get_all = False
-    enable = False
+    enable_switch = False
 
 
 class ShareChannelsButtonsTable(TypeButtonsABC):
@@ -501,7 +501,7 @@ class ShareChannelsButtonsTable(TypeButtonsABC):
     add_to_msg = _(' User')
     key_sub = 'sharechannel'
     get_all = True
-    enable = True
+    enable_switch = True
 
 
 class UserManagerButtonsTable(TypeButtonsABC):
@@ -510,7 +510,7 @@ class UserManagerButtonsTable(TypeButtonsABC):
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
     get_all = False
-    enable = False
+    enable_switch = False
 
 
 class UserButtonsButtons(TypeButtonsABC):
@@ -519,7 +519,23 @@ class UserButtonsButtons(TypeButtonsABC):
     buttons_table = ButtonsTableOfDataFromDatabase
     available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
     get_all = False
-    enable = False
+    enable_switch = False
+
+    @staticmethod
+    def change_user(event):
+        new_name = CI[event].path[-1].data
+        CI[event].selected_user = new_name
+
+    do_smth = change_user
+
+
+class DelUserButtons(TypeButtonsABC):
+    key = 'deluser'
+    title_msg_ = _('Here it is {}! \n What do you want to do?')
+    buttons_table = ButtonsTableOfDataFromDatabase
+    available_control_buttons = (TickersButton, ParseChannelsButton, ShareChannelsButton, SettingsButton)
+    get_all = False
+    enable_switch = False
 
     @staticmethod
     def change_user(event):
@@ -534,9 +550,9 @@ class SettingsButtonsTable(TypeButtonsABC):
     title_msg_ = _('settings')
     back_msg = _(' User')
     buttons_table = ButtonsTableOfDataFromDatabase
-    available_control_buttons = (BackButton, LogOutUserButton, DeleteUserButton, LanguageButton, MyUsersButton,)
+    available_control_buttons = (BackButton, LogOutUserButton, DeleteUserButton, MyUsersButton,LanguageButton,)
     get_all = False
-    enable = False
+    enable_switch = False
 
 
 # _________________________________________________________________________________________________________________________________________________________________________
@@ -796,7 +812,7 @@ async def BOT_handler_callback_buttons_table(event, stop_propagation=True, send_
 
 
 DBOT_handler_button_tickers = events.register(
-    events.CallbackQuery(pattern='tickers_|tags_|tag_|parsechannels_|sharechannels_|user_|usermanager_|settings_'))(
+    events.CallbackQuery(pattern='tickers_|tags_|tag_|pchs_|shchs_|user_|usermanager_|settings_'))(
     fsm_decor(st.ActionCallBack())(
         BOT_handler_callback_buttons_table))
 DBOT = events.register(
@@ -896,7 +912,7 @@ async def BOT_handler_button_add(event):
     _ = CI[event]._
     _k, _k_data, value_of_k = CI[event].get_var_of_last_path()
     CI[event].save_path_for_state()
-
+    dict_for_type_buttons_by_key[_k].add_fist_state_of_conversation
     message = await event.respond(
         _(
             'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3').format(
@@ -1100,7 +1116,7 @@ parse_bot_users_state_fsm = st.ParseBotUsersStateFSM()
 # _______________________________________________________
 # add buttons
 dict_for_type_buttons_by_key = {}
-for cls in globals()['TypeButtonsABC'].__subclasses__():
+for cls in globals()[TypeButtonsABC.__name__].__subclasses__():
     dict_for_type_buttons_by_key[cls.key] = cls
 
 

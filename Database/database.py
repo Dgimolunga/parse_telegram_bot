@@ -520,14 +520,14 @@ dict_for_add = {
         'list_filter_for_add': ['key_user', 'ticker'],
         'list_filter_for_switch': ['key_ticker'],
         'list_filter_for_get_all': ['key_user'],
-        'lambda_for_get_all': lambda obj: {obj.ticker: (obj.key_ticker, obj.enable)}
+        'lambda_for_get_all': lambda obj: {obj.ticker: (obj.key_ticker, obj.enable_switch)}
     },
     'tags': {
         'base': Tag,
         'list_filter_for_add': ['key_ticker', 'tag'],
         'list_filter_for_get_all': ['key_ticker'],
         'list_filter_for_switch': ['key_tag'],
-        'lambda_for_get_all': lambda obj: {obj.tag: (obj.key_tag, obj.enable)}
+        'lambda_for_get_all': lambda obj: {obj.tag: (obj.key_tag, obj.enable_switch)}
     }
 }
 
@@ -618,7 +618,7 @@ def db_switch_some_for_user(_k, _k_data):
     obj = query.first()
     if not obj:
         return False
-    obj.enable = not obj.enable
+    obj.enable_switch = not obj.enable_switch
     session_db.commit()
     return True
 
