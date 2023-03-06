@@ -5,7 +5,7 @@ from handlers.handlers_of_bot import handlers_BOTS as h_bot
 # !!! ВАЖЕН ПОРЯДОК В ЭТИХ СЛОВОРЯХ !!!
 handlers_USERBOT_dict = {
     'event_handler_ms_from': h_ubot.event_handler_ms_from,
-    'event_handler_spam_ms': h_ubot.event_handler_spam_ms,
+    # 'event_handler_spam_ms': h_ubot.event_handler_spam_ms,
 }
 
 # !!! ВАЖЕН ПОРЯДОК В ЭТИХ СЛОВОРЯХ !!!

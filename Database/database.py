@@ -2,13 +2,12 @@
 from logger import logger as my_logger
 # import localization.localization as localization
 import data_value as data_value_file
-
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm.session import sessionmaker
-
 import re
+
 
 """
 tools for ParseBot`s ORM database
@@ -18,6 +17,7 @@ none_ticker = 'No Ticker'
 
 DEF_LANGUAGE = 'en_US'
 DEF_STATE = 1
+set_of_parse_channel = set()
 # ____________________________________________________________
 # add my logger
 logger = my_logger.get_logger(__name__)
@@ -159,7 +159,7 @@ class ParsChannel(Base):
     __tablename__ = 'ParsChannels'
     key_parschannel = Column(Integer, primary_key=True)
     key_user = Column(String)
-    pars_channel_id = Column(Integer)
+    pars_channel_id = Column(String)
     enable = Column(Boolean, unique=False, default=True)
 
     # def __repr__(self):
@@ -528,7 +528,23 @@ dict_for_add = {
         'list_filter_for_get_all': ['key_ticker'],
         'list_filter_for_switch': ['key_tag'],
         'lambda_for_get_all': lambda obj: {obj.tag: (obj.key_tag, obj.enable)}
-    }
+    },
+    'pchs': {
+            'base': ParsChannel,
+            'list_filter_for_add': ['key_user', 'pars_channel_id'],
+            'list_filter_for_get_all': ['key_user'],
+            'list_filter_for_switch': ['key_user'],
+            'lambda_for_get_all': lambda obj: {obj.pars_channel_id: (obj.key_parschannel, obj.enable)}
+    },
+    'shchs': {
+        'base': ShareChannel,
+        'list_filter_for_add': ['key_user', 'share_channel_id'],
+        'list_filter_for_get_all': ['key_user'],
+        'list_filter_for_switch': ['key_user'],
+        'lambda_for_get_all': lambda obj: {obj.share_channel_id: (obj.key_sharechannel, obj.enable)}
+    },
+
+
 }
 
 dict_for_get_name = {
@@ -598,6 +614,9 @@ def db_add_smth_for_user(_k, _k_data, add_data_list):
     for_query = dict_for_add[_k]
     base_ = for_query['base']
     for data in add_data_list:
+        if _k == 'pchs':
+            data_value_file.telegram_parse.join_chat(data)
+            set_of_parse_channel.add(data)  # add parse channel to all
         kwarg_filter_and_add = dict(zip(for_query['list_filter_for_add'], [_k_data, data]))
         query = session_db.query(base_).filter_by(**kwarg_filter_and_add)
         if query.first():
@@ -709,3 +728,10 @@ def db_del_1(_k, _k_data):
     if not dict_del.get(_k, None):
         return False
     return dict_del[_k](_k_data)
+
+
+def db_get_set_of_parse_channel():
+    query = session_db.query(ParsChannel)
+    for channel in query:
+        set_of_parse_channel.add(channel.pars_channel_id)
+    return set_of_parse_channel

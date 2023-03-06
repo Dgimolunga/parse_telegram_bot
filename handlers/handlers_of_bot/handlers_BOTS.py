@@ -13,6 +13,7 @@ from handlers.tools import states as st
 from abc import abstractmethod, ABC
 import asyncio
 import telethon.events
+
 # ______________________________________________________________________________________________________________________
 # import function of database
 from Database.database import get_all_users, check_user_logging_name_in_db, \
@@ -248,10 +249,10 @@ class AddNewButton(ButtonOfTabale, ABC):
     async def base_add_state_of_conversation(event, _k, _k_data, value_of_k):
         message = await event.respond(
             _(
-                'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3').format(
+                dict_for_type_buttons_by_key[_k].example.format(
                 _(dict_for_type_buttons_by_key[_k].add_msg),
                 _(dict_for_type_buttons_by_key[_k].add_to_msg),
-                value_of_k
+                value_of_k)
             )
         )
         return message
@@ -484,6 +485,7 @@ class TagsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton, EditButton
     add_msg = _(' Tag')
     add_to_msg = _(' Ticker')
     fist_state_of_conversation = AddNewButton.base_add_state_of_conversation
+    example = 'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3'
     edit_msg = _(' Ticker name')
     delete_msg = _(' Ticker')
     key_sub = 'tag'
@@ -499,6 +501,7 @@ class TickersButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton, GetAllB
     add_msg = _(' Ticker')
     add_to_msg = _(' User')
     fist_state_of_conversation = AddNewButton.base_add_state_of_conversation
+    example = 'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\nExample1\nexample2😃\n😃exaMple3'
     key_sub = 'tags'
     enable_switch = True
 
@@ -513,7 +516,7 @@ class ParseChannelButtonsTable(ButtonsTableInfoABC, BackButton, EditButton, Dele
     delete_msg = _(' Parse channel')
 
 
-class ParseChannelsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton):
+class ParseChannelsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton, GetAllButton):
     key = 'pchs'
     title_msg_ = _(' Parse channels of user: {}')
     buttons_table = ButtonsTableOfDataFromDatabase
@@ -523,6 +526,7 @@ class ParseChannelsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton):
     add_msg = _(' Parse channel')
     add_to_msg = _(' User')
     fist_state_of_conversation = AddNewButton.base_add_state_of_conversation
+    example = 'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\n333333\n233333\n123'
 
     key_sub = 'parsechannel'
     enable_switch = True
@@ -538,7 +542,7 @@ class ShareChannelBattonsTable(ButtonsTableInfoABC, BackButton, EditButton, Dele
     delete_msg = _(' Share channel')
 
 
-class ShareChannelsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton):
+class ShareChannelsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton, GetAllButton):
     key = 'shchs'
     title_msg_ = _(' Parse channels of user: {}')
     buttons_table = ButtonsTableOfDataFromDatabase
@@ -547,6 +551,7 @@ class ShareChannelsButtonsTable(ButtonsTableInfoABC, BackButton, AddNewButton):
     add_msg = _(' Share channel')
     add_to_msg = _(' User')
     fist_state_of_conversation = AddNewButton.base_add_state_of_conversation
+    example = 'Input new {} to {}:\n{}\n Please use this format, max size of one 55:\n3333333\n233333\n123'
 
     key_sub = 'sharechannel'
     enable_switch = True
@@ -934,7 +939,7 @@ async def BOT_handler_add_finish(fun, args, kwarg):
     _k, _k_data, value_of_k = CI[event].get_var_of_last_path(from_saved=True)
 
     if CI[event].chat_state_data['state_add_result_confirm'] == 'addnextconfirmyes_':
-        successfully_add = db_add_smth_for_user(_k, _k_data, add_data_list)
+        successfully_add = db_add_smth_for_user(_k, _k_data, add_data_list) # add to db
         if not successfully_add:
             await event.respond(_('Error add. Try again'))
         else:

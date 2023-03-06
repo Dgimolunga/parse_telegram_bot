@@ -6,6 +6,8 @@ import config_for_bot as cfg
 from handlers import dict_of_used_handlers as cfg_d
 import data_value as data_value
 import telethon
+from telethon.tl.types import PeerUser, PeerChat, PeerChannel
+from telethon.tl.functions.channels import JoinChannelRequest
 import asyncio
 from handlers.handlers_of_bot.handlers_BOTS import delete_all_message_from_chats
 
@@ -58,8 +60,15 @@ class TelegramParse(SingleTonePattern):
 
     # running telegramClient: bot_parse and bot_admin
     def start(self):
-        self.loop.run_until_complete(self.some_BOT_run('bot_admin', cfg.bot_admin_token),)
+        self.loop.run_until_complete(self.some_BOT_run('bot_admin', cfg.bot_admin_token))
         self.loop.run_until_complete(self.some_BOT_run('bot_parse', cfg.bot_token))
+        self.loop.run_until_complete(self.some_CLIENT_run())
+        # self.add_client_to_loop()
+
+    async def some_CLIENT_run(self):
+        client = MyTelethonClient(cfg.api_id_new, cfg.api_hash_new, bot_type='bot_user', session='session_client')
+        self.bots['bot_user']['users'].append(client)
+        await client.start()
 
     # bot client of same bos
     async def some_BOT_run(self, bot_type: str, bot_token: str):
@@ -67,6 +76,7 @@ class TelegramParse(SingleTonePattern):
         if bot_type == 'bot_user':
             pass
             # self.bots['bot_users'].append(bot)
+
         else:
             self.bots[bot_type]['bot_client'] = bot
         await bot.start(bot_token=bot_token)
@@ -79,33 +89,44 @@ class TelegramParse(SingleTonePattern):
         if not self.loop.is_running():
             self.loop.run_until_complete(task)
 
-    async def client_run(self, loop, client_bot=None, sender_id='Dgimolunga2'):
+    def join_chat(self, chat_id):
+        task = self.loop.create_task(self.join_chat_task(chat_id))
+
+    async def join_chat_task(self, chat_id):
+        client = self.bots['bot_user']['users'][-1]
+        print('!!!!!!!!!!!')
+        print(int(chat_id))
+        entity_chat = await client.get_entity('channelforparse4')
+        await client(JoinChannelRequest(entity_chat))
+
+    async def client_run(self, client_bot=None, sender_id='Dgimolunga2'):
         if client_bot is None:
-            client_bot = botsMain
-        client = telega("Client" + str(cfg.id_), cfg.api_id, cfg.api_hash, loop=loop)
+            pass
+            # client_bot = botsMain
+        client = MyTelethonClient(cfg.api_id, cfg.api_hash, 'bot_user', "Client" + str(cfg.id_))
         cfg.id_ += 1
         await client.connect()
         if not await client.is_user_authorized():
             logger.ERROR('Info: Starting new Client%s', cfg.id_)
             await client.send_code_request("79525362955")
-            if client_bot is None:
-                client_bot = botsMain
-                await client_bot.start()
-                await client_bot.connect()
+            # if client_bot is None:
+            #     client_bot = botsMain
+            #     await client_bot.start()
+            #     await client_bot.connect()
             async with client_bot.conversation(sender_id) as conv:
                 await conv.send_message('Enter password?')
                 password = await conv.get_response(timeout=100)
                 await client.sign_in("79525362955", password)
                 await conv.send_message('Nice to meet you, {}!'.format(password.text))
-            clients.append(client)
+            # clients.append(client)
         await client.start()
         await client.run_until_disconnected()
 
-    def add_client_to_loop(client_bot=None, sender_id=None):
-        if client_bot is None:
-            client_bot = data_value.bots['bot_admin']
+    def add_client_to_loop(self, client_bot=None, sender_id=None):
+        # if client_bot is None:
+        #     client_bot = data_value.bots['bot_admin']
         loop = asyncio.get_event_loop()
-        loop.create_task(client_run(loop, client_bot, sender_id))
+        loop.create_task(self.client_run(client_bot, sender_id))
 
 
 def main():
