@@ -18,7 +18,7 @@ import telethon.events
 # import function of database
 from Database.database import get_all_users, check_user_logging_name_in_db, \
     add_new_user_to_database, add_user_to_telegram_id, \
-    db_get, db_add_smth_for_user, db_switch_some_for_user, db_del, db_del_1, db_get_all_smth, db_get_1
+    db_get, db_del, db_del_1, db_add_smth_for_user, db_switch_some_for_user, db_get_all_smth
 # import exception of database
 from Database.database import NotCorrectExc, DataDuplicateExc, UserNotFoundExc
 

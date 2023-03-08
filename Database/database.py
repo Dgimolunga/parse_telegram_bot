@@ -8,10 +8,11 @@ from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm.session import sessionmaker
 import re
 
-
 """
 tools for ParseBot`s ORM database
 """
+
+dict_of_base_from_key = {}
 none_ticker = 'No Ticker'
 # from sqlalchemy.ext.declarative import declarative_base
 
@@ -96,6 +97,7 @@ dict_table_and_column_of_database = {'User': ('key_user', 'user_password'),
 
 
 class ChatsSettings(Base):
+    key = 'chatsettings'
     __tablename__ = 'ChatsSettings'
     chat_id = Column(Integer, primary_key=True)
     language = Column(String)
@@ -106,6 +108,7 @@ class ChatsSettings(Base):
 # ______________________________________________________________
 
 class User(Base):
+    key = 'user'
     __tablename__ = 'Users'
     key_user = Column(String, primary_key=True)
     user_password = Column(String)
@@ -122,6 +125,14 @@ class User(Base):
 #     __tablename__ = 'LanguageForTelId'
 #     telegram_id = Column(Integer, primary_key=True)
 #     language_for_tel_id = Column(String)
+# class DbInterface():
+#     bases = {'Ticker': 'Ticker1'}
+#
+#     def db_add_manager(key):
+#         if key not in ('Ticker', 'Tag'):
+#             return False
+#         base = bases[key]
+#         base(data)
 
 
 class TelegramIdHaveUsers(Base):
@@ -132,35 +143,119 @@ class TelegramIdHaveUsers(Base):
 
 
 class Ticker(Base):
+    key = 'tickers'
     __tablename__ = 'Tickers'
     key_ticker = Column(Integer, primary_key=True)
     key_user = Column(String)
     ticker = Column(String)
-    enable = Column(Boolean, unique=False, default=True)
+    enable = Column(Boolean, default=True)
+
+    def __init__(self, key_user, ticker, enable=True):
+        self.key_user = key_user
+        self.ticker = ticker
+        self.enable = enable
+
+    @staticmethod
+    def add_kwargs_for_filter(_k_data, data):
+        return {'key_user': _k_data, 'ticker': data}
+
+    @staticmethod
+    def switch_kwargs_for_filter(_k_data):
+        return {'key_ticker': _k_data}
+
+    @staticmethod
+    def get_all_kwargs_for_filter(_k_data):
+        return {'key_user': _k_data}
+
+    def one_for_get_all(self):
+        return {self.ticker: (self.key_ticker, self.enable)}
 
 
 class Tag(Base):
+    key = 'tags'
     __tablename__ = 'Tags'
     key_tag = Column(Integer, primary_key=True)
     key_ticker = Column(Integer)
     tag = Column(String)
-    enable = Column(Boolean, unique=False, default=True)
+    enable = Column(Boolean, default=True)
+
+    def __init__(self, key_ticker, tag, enable=True):
+        self.key_ticker = key_ticker
+        self.tag = tag
+        self.enable = enable
+
+    @staticmethod
+    def add_kwargs_for_filter(_k_data, data):
+        return {'key_ticker': _k_data, 'tag': data}
+
+    @staticmethod
+    def switch_kwargs_for_filter(_k_data):
+        return {'key_tag': _k_data}
+
+    @staticmethod
+    def get_all_kwargs_for_filter(_k_data):
+        return {'key_ticker': _k_data}
+
+    def one_for_get_all(self):
+        return {self.tag: (self.key_tag, self.enable)}
 
 
 class ShareChannel(Base):
+    key = 'shchs'
     __tablename__ = 'ShareChannels'
     key_sharechannel = Column(Integer, primary_key=True)
     key_user = Column(String)
     share_channel_id = Column(Integer)
-    enable = Column(Boolean, unique=False, default=True)
+    enable = Column(Boolean, default=True)
+
+    def __init__(self, key_user, share_channel_id, enable=True):
+        self.key_user = key_user
+        self.share_channel_id = share_channel_id
+        self.enable = enable
+
+    @staticmethod
+    def add_kwargs_for_filter(_k_data, data):
+        return {'key_user': _k_data, 'share_channel_id': data}
+
+    @staticmethod
+    def switch_kwargs_for_filter(_k_data):
+        return {'key_user': _k_data}
+
+    @staticmethod
+    def get_all_kwargs_for_filter(_k_data):
+        return {'key_user': _k_data}
+
+    def one_for_get_all(self):
+        return {self.share_channel_id: (self.key_sharechannel, self.enable)}
 
 
 class ParsChannel(Base):
+    key = 'pchs'
     __tablename__ = 'ParsChannels'
     key_parschannel = Column(Integer, primary_key=True)
     key_user = Column(String)
     pars_channel_id = Column(String)
-    enable = Column(Boolean, unique=False, default=True)
+    enable = Column(Boolean, default=True)
+
+    def __init__(self, key_user, pars_channel_id, enable=True):
+        self.key_user = key_user
+        self.pars_channel_id = pars_channel_id
+        self.enable = enable
+
+    @staticmethod
+    def add_kwargs_for_filter(_k_data, data):
+        return {'key_user': _k_data, 'pars_channel_id': data}
+
+    @staticmethod
+    def switch_kwargs_for_filter(_k_data):
+        return {'key_user': _k_data}
+
+    @staticmethod
+    def get_all_kwargs_for_filter(_k_data):
+        return {'key_user': _k_data}
+
+    def one_for_get_all(self):
+        return {self.pars_channel_id: (self.key_parschannel, self.enable)}
 
     # def __repr__(self):
     #     return '<User(telegram_id="{}", phone="{}", api_id="{}", api_hash="{}", share_channel_id="{}", session_name="{}", state="{}", start_script="{}"'.format(
@@ -184,6 +279,10 @@ Base.metadata.create_all(engine)
 
 # ____________________________________________________________
 # tuple for ParseBotORM columns for classes
+for cls in globals()[Base.__name__].__subclasses__():
+    if hasattr(cls, 'key'):
+        dict_of_base_from_key[cls.key] = cls
+
 arg_other = (
     "some arg...."
 )
@@ -514,39 +613,6 @@ def db_update_selected_user(chat_id, new_selected_user):
     session_db.commit()
 
 
-dict_for_add = {
-    'tickers': {
-        'base': Ticker,
-        'list_filter_for_add': ['key_user', 'ticker'],
-        'list_filter_for_switch': ['key_ticker'],
-        'list_filter_for_get_all': ['key_user'],
-        'lambda_for_get_all': lambda obj: {obj.ticker: (obj.key_ticker, obj.enable)}
-    },
-    'tags': {
-        'base': Tag,
-        'list_filter_for_add': ['key_ticker', 'tag'],
-        'list_filter_for_get_all': ['key_ticker'],
-        'list_filter_for_switch': ['key_tag'],
-        'lambda_for_get_all': lambda obj: {obj.tag: (obj.key_tag, obj.enable)}
-    },
-    'pchs': {
-            'base': ParsChannel,
-            'list_filter_for_add': ['key_user', 'pars_channel_id'],
-            'list_filter_for_get_all': ['key_user'],
-            'list_filter_for_switch': ['key_user'],
-            'lambda_for_get_all': lambda obj: {obj.pars_channel_id: (obj.key_parschannel, obj.enable)}
-    },
-    'shchs': {
-        'base': ShareChannel,
-        'list_filter_for_add': ['key_user', 'share_channel_id'],
-        'list_filter_for_get_all': ['key_user'],
-        'list_filter_for_switch': ['key_user'],
-        'lambda_for_get_all': lambda obj: {obj.share_channel_id: (obj.key_sharechannel, obj.enable)}
-    },
-
-
-}
-
 dict_for_get_name = {
 
     'user': {
@@ -609,31 +675,27 @@ dict_for_del = {
 
 
 def db_add_smth_for_user(_k, _k_data, add_data_list):
-    if _k not in dict_for_add:
+    if _k not in dict_of_base_from_key:
         return False
-    for_query = dict_for_add[_k]
-    base_ = for_query['base']
+    base_ = dict_of_base_from_key[_k]
     for data in add_data_list:
-        if _k == 'pchs':
-            data_value_file.telegram_parse.join_chat(data)
-            set_of_parse_channel.add(data)  # add parse channel to all
-        kwarg_filter_and_add = dict(zip(for_query['list_filter_for_add'], [_k_data, data]))
-        query = session_db.query(base_).filter_by(**kwarg_filter_and_add)
+        # if _k == 'pchs':
+        #     data_value_file.telegram_parse.join_chat(data)
+        #     set_of_parse_channel.add(data)  # add parse channel to all
+        query = session_db.query(base_).filter_by(**base_.add_kwargs_for_filter(_k_data, data))
         if query.first():
             continue
-        obj_ = base_(**kwarg_filter_and_add)
+        obj_ = base_(_k_data, data)
         session_db.add(obj_)
     session_db.commit()
     return True
 
 
 def db_switch_some_for_user(_k, _k_data):
-    if _k not in dict_for_add:
+    if _k not in dict_of_base_from_key:
         return False
-    for_query = dict_for_add[_k]
-    base_ = for_query['base']
-    kwarg_filter_and_switch = dict(zip(for_query['list_filter_for_switch'], [_k_data]))
-    query = session_db.query(base_).filter_by(**kwarg_filter_and_switch)
+    base_ = dict_of_base_from_key[_k]
+    query = session_db.query(base_).filter_by(**base_.switch_kwargs_for_filter(_k_data))
     obj = query.first()
     if not obj:
         return False
@@ -643,16 +705,14 @@ def db_switch_some_for_user(_k, _k_data):
 
 
 def db_get_all_smth(_k, _k_data):
-    if _k not in dict_for_add:
+    if _k not in dict_of_base_from_key:
         return False
-    for_query = dict_for_add[_k]
-    base_ = for_query['base']
-    kwarg_filter_and_get_all = dict(zip(for_query['list_filter_for_get_all'], [_k_data]))
-    query = session_db.query(base_).filter_by(**kwarg_filter_and_get_all)
+    base_ = dict_of_base_from_key[_k]
+    query = session_db.query(base_).filter_by(**base_.get_all_kwargs_for_filter(_k_data))
     res_all = {}
     # не доделано
     for obj in query:
-        res_all.update(for_query['lambda_for_get_all'](obj))
+        res_all.update(obj.one_for_get_all())
     return res_all
 
 
